@@ -617,6 +617,126 @@ sidebar-nav {
   background: var(--success);
 }
 
+/* ─── Connection Status ─── */
+
+.connection-status-wrapper {
+  position: relative;
+}
+
+.connection-status-btn {
+  /* Match theme-toggle capsule sizing */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--lg-border-color);
+  background: var(--lg-bg-primary);
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background var(--lg-duration-fast) var(--lg-easing-spring),
+    border-color var(--lg-duration-fast) var(--lg-easing-spring),
+    transform var(--lg-duration-fast) var(--lg-easing-spring);
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .connection-status-btn {
+    backdrop-filter: blur(var(--lg-blur-sm));
+    -webkit-backdrop-filter: blur(var(--lg-blur-sm));
+  }
+}
+
+.connection-status-btn:hover {
+  background: var(--lg-bg-interactive);
+}
+
+.connection-status-btn:active {
+  transform: scale(0.95);
+}
+
+.connection-status-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.connection-status-btn .status-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.pill--connected {
+  color: var(--success);
+}
+
+.pill--connecting {
+  color: var(--muted);
+}
+
+.status-dot--pulse {
+  animation: dot-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.connection-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 200;
+  min-width: 160px;
+  padding: 4px;
+  border-radius: var(--lg-radius-md);
+  border: 1px solid var(--lg-border-color);
+  background: var(--lg-bg-elevated);
+  box-shadow: var(--lg-shadow-high);
+  animation: glass-enter var(--lg-duration-fast) var(--lg-easing-spring) both;
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .connection-menu {
+    backdrop-filter: blur(var(--lg-blur-lg)) saturate(var(--lg-saturate));
+    -webkit-backdrop-filter: blur(var(--lg-blur-lg)) saturate(var(--lg-saturate));
+  }
+}
+
+.connection-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--lg-radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition:
+    background var(--lg-duration-fast) var(--lg-easing-spring),
+    color var(--lg-duration-fast) var(--lg-easing-spring);
+}
+
+.connection-menu__item:hover {
+  background: var(--lg-bg-interactive);
+}
+
+.connection-menu__item--danger {
+  color: var(--accent);
+}
+
+.connection-menu__item--danger:hover {
+  background: var(--accent-soft);
+}
+
 /* ─── Theme Toggle ─── */
 
 .theme-toggle {

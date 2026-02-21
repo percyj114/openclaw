@@ -138,7 +138,7 @@ export class OverviewView extends LitElement {
       <div class="overview-grid">
         ${this.renderHealthSection(connected, snapshot)}
         ${this.renderStatsSection()}
-        ${this.renderConnectionSection(g)}
+        ${connected ? nothing : this.renderConnectionSection(g)}
         ${this.renderDebugSections(g)}
       </div>
     `;
