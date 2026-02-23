@@ -38,6 +38,9 @@ describe("subscribeEmbeddedPiSession", () => {
     emit({ type: "auto_compaction_start" });
     expect(subscription.getCompactionCount()).toBe(0);
 
+    emit({ type: "auto_compaction_end", willRetry: true });
+    expect(subscription.getCompactionCount()).toBe(0);
+
     emit({ type: "auto_compaction_end", willRetry: false });
     expect(subscription.getCompactionCount()).toBe(1);
   });

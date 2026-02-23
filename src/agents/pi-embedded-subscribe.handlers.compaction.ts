@@ -39,7 +39,9 @@ export function handleAutoCompactionEnd(
 ) {
   ctx.state.compactionInFlight = false;
   const willRetry = Boolean(evt.willRetry);
-  ctx.incrementCompactionCount();
+  if (!willRetry) {
+    ctx.incrementCompactionCount();
+  }
   if (willRetry) {
     ctx.noteCompactionRetry();
     ctx.resetForCompactionRetry();
