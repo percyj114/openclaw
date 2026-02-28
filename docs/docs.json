@@ -1275,7 +1275,12 @@
               },
               {
                 "group": "Technical reference",
-                "pages": ["reference/wizard", "reference/token-use", "reference/prompt-caching"]
+                "pages": [
+                  "reference/wizard",
+                  "reference/token-use",
+                  "reference/secretref-credential-surface",
+                  "reference/prompt-caching"
+                ]
               },
               {
                 "group": "Concept internals",
