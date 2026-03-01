@@ -700,14 +700,15 @@ export async function startGatewayServer(
       return { warningCount: prepared.warnings.length };
     },
     resolveSecrets: async ({ commandName, targetIds }) => {
-      const { assignments, diagnostics } = resolveCommandSecretsFromActiveRuntimeSnapshot({
-        commandName,
-        targetIds: new Set(targetIds),
-      });
+      const { assignments, diagnostics, inactiveRefPaths } =
+        resolveCommandSecretsFromActiveRuntimeSnapshot({
+          commandName,
+          targetIds: new Set(targetIds),
+        });
       if (assignments.length === 0) {
-        return { assignments: [] as CommandSecretAssignment[], diagnostics };
+        return { assignments: [] as CommandSecretAssignment[], diagnostics, inactiveRefPaths };
       }
-      return { assignments, diagnostics };
+      return { assignments, diagnostics, inactiveRefPaths };
     },
   });
 
