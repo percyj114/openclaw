@@ -234,7 +234,7 @@ Docs: https://docs.openclaw.ai
 - Agents/video generation: accept `agents.defaults.videoGenerationModel` in strict config validation and `openclaw config set/get`, so gateways using `video_generate` no longer fail to boot after enabling a video model.
 - Matrix/streaming: add a quiet preview mode for streamed Matrix replies, keep legacy `partial` preview-first behavior, and finalize quiet media captions correctly so previews stop notifying early without dropping final text semantics. (#61450) Thanks @gumadeiras.
 - Gateway/shutdown: bound websocket-server shutdown even when no tracked clients remain, so gateway restarts stop hanging until the watchdog kills the process. (#61565) Thanks @mbelinky.
-- Matrix: retry direct transport requests without the per-request pinned dispatcher when newer undici runtimes reject that dispatcher shape, so Matrix clients resume syncing instead of stalling on capability refresh failures.
+- Matrix: retry direct transport requests without the per-request pinned dispatcher when newer undici runtimes reject that dispatcher shape, so Matrix clients resume syncing instead of stalling on capability refresh failures. (#61595) Thanks @gumadeiras.
 
 ## 2026.4.2
 
