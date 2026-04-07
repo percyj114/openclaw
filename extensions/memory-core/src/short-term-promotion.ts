@@ -12,6 +12,8 @@ import {
 } from "./concept-vocabulary.js";
 
 const SHORT_TERM_PATH_RE = /(?:^|\/)memory\/(\d{4})-(\d{2})-(\d{2})\.md$/;
+const SHORT_TERM_SESSION_CORPUS_RE =
+  /(?:^|\/)memory\/\.dreams\/session-corpus\/(\d{4})-(\d{2})-(\d{2})\.(?:md|txt)$/;
 const SHORT_TERM_BASENAME_RE = /^(\d{4})-(\d{2})-(\d{2})\.md$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_RECENCY_HALF_LIFE_DAYS = 14;
@@ -710,6 +712,9 @@ async function writeStore(workspaceDir: string, store: ShortTermRecallStore): Pr
 export function isShortTermMemoryPath(filePath: string): boolean {
   const normalized = normalizeMemoryPath(filePath);
   if (SHORT_TERM_PATH_RE.test(normalized)) {
+    return true;
+  }
+  if (SHORT_TERM_SESSION_CORPUS_RE.test(normalized)) {
     return true;
   }
   return SHORT_TERM_BASENAME_RE.test(normalized);
