@@ -219,13 +219,6 @@ describe("memory-core dreaming phases", () => {
         agents: {
           defaults: {
             workspace: workspaceDir,
-            memorySearch: {
-              enabled: true,
-              sources: ["memory", "sessions"],
-              experimental: {
-                sessionMemory: true,
-              },
-            },
           },
         },
         plugins: {
