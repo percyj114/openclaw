@@ -23,9 +23,16 @@ export async function resolveGroupActivationFor(params: {
   });
   const legacyEntry = legacySessionKey ? store[legacySessionKey] : undefined;
   const entry = store[params.sessionKey] ?? legacyEntry;
-  if (!store[params.sessionKey] && legacyEntry) {
+  if (!store[params.sessionKey] && legacyEntry?.groupActivation !== undefined) {
     await updateSessionStore(storePath, (nextStore) => {
-      nextStore[params.sessionKey] ??= { ...legacyEntry };
+      const scopedEntry = nextStore[params.sessionKey];
+      if (scopedEntry?.groupActivation !== undefined) {
+        return;
+      }
+      nextStore[params.sessionKey] = {
+        ...scopedEntry,
+        groupActivation: legacyEntry.groupActivation,
+      };
     });
   }
   const requireMention = resolveWhatsAppInboundPolicy({

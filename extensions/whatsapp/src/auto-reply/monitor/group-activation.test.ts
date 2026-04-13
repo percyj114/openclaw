@@ -16,7 +16,11 @@ describe("resolveGroupActivationFor", () => {
     const sessionKey = "agent:main:whatsapp:group:123@g.us:thread:whatsapp-account-work";
     const legacySessionKey = "agent:main:whatsapp:group:123@g.us";
     const { storePath, cleanup } = await makeSessionStore({
-      [legacySessionKey]: { groupActivation: "always" },
+      [legacySessionKey]: {
+        groupActivation: "always",
+        sessionId: "legacy-session",
+        updatedAt: 123,
+      },
     });
     cleanups.push(cleanup);
 
@@ -39,9 +43,10 @@ describe("resolveGroupActivationFor", () => {
 
     expect(activation).toBe("always");
     await vi.waitFor(() => {
-      expect(loadSessionStore(storePath, { skipCache: true })[sessionKey]?.groupActivation).toBe(
-        "always",
-      );
+      const scopedEntry = loadSessionStore(storePath, { skipCache: true })[sessionKey];
+      expect(scopedEntry?.groupActivation).toBe("always");
+      expect(scopedEntry?.sessionId).toBeUndefined();
+      expect(scopedEntry?.updatedAt).toBeUndefined();
     });
   });
 });
