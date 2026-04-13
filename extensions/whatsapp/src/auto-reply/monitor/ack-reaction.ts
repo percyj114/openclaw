@@ -43,6 +43,7 @@ export function maybeSendAckReaction(params: {
     params.msg.chatType === "group"
       ? resolveGroupActivationFor({
           cfg: params.cfg,
+          accountId: params.accountId,
           agentId: params.agentId,
           sessionKey: params.sessionKey,
           conversationId: conversationIdForCheck,

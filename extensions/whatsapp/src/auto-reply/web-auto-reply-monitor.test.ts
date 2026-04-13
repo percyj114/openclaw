@@ -234,6 +234,70 @@ describe("applyGroupGating", () => {
     expect(result.shouldProcess).toBe(true);
   });
 
+  it("uses account-scoped groupPolicy and groupAllowFrom for named-account group gating", () => {
+    const cfg = makeConfig({
+      channels: {
+        whatsapp: {
+          groupPolicy: "allowlist",
+          accounts: {
+            work: {
+              groupPolicy: "allowlist",
+              groupAllowFrom: ["+111"],
+            },
+          },
+        },
+      },
+    });
+
+    const { result } = runGroupGating({
+      cfg,
+      msg: createGroupMessage({
+        id: "g-account-policy",
+        accountId: "work",
+        body: "following up",
+        senderE164: "+111",
+        senderJid: "111@s.whatsapp.net",
+        selfJid: "15551234567@s.whatsapp.net",
+        selfE164: "+15551234567",
+        replyToId: "m0",
+        replyToBody: "bot said hi",
+        replyToSender: "+15551234567",
+        replyToSenderJid: "15551234567@s.whatsapp.net",
+        replyToSenderE164: "+15551234567",
+      }),
+    });
+
+    expect(result.shouldProcess).toBe(true);
+  });
+
+  it("uses account-scoped allowFrom when bypassing mention gating for owner commands", () => {
+    const cfg = makeConfig({
+      channels: {
+        whatsapp: {
+          allowFrom: ["+999"],
+          accounts: {
+            work: {
+              allowFrom: ["+111"],
+            },
+          },
+        },
+      },
+    });
+
+    const { result } = runGroupGating({
+      cfg,
+      msg: createGroupMessage({
+        id: "g-account-owner",
+        accountId: "work",
+        body: "/new",
+        senderE164: "+111",
+        senderName: "Owner",
+      }),
+    });
+
+    expect(result.shouldProcess).toBe(true);
+  });
+
   it.each([
     { id: "g-new", command: "/new" },
     { id: "g-status", command: "/status" },
