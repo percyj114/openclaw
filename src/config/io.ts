@@ -232,6 +232,42 @@ function coerceConfig(value: unknown): OpenClawConfig {
   return value as OpenClawConfig;
 }
 
+function summarizeWhatsAppCompatConfig(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const channels = value.channels;
+  if (!isRecord(channels)) {
+    return null;
+  }
+  const whatsapp = channels.whatsapp;
+  if (!isRecord(whatsapp)) {
+    return null;
+  }
+  const accounts = isRecord(whatsapp.accounts) ? whatsapp.accounts : undefined;
+  const defaultAccount = isRecord(accounts?.default) ? accounts.default : undefined;
+  return {
+    root: {
+      dmPolicy: whatsapp.dmPolicy,
+      allowFrom: whatsapp.allowFrom,
+      groupPolicy: whatsapp.groupPolicy,
+      groupAllowFrom: whatsapp.groupAllowFrom,
+      defaultTo: whatsapp.defaultTo,
+      defaultAccount: whatsapp.defaultAccount,
+    },
+    accounts: accounts ? Object.keys(accounts).toSorted((a, b) => a.localeCompare(b)) : [],
+    defaultAccountConfig: defaultAccount
+      ? {
+          dmPolicy: defaultAccount.dmPolicy,
+          allowFrom: defaultAccount.allowFrom,
+          groupPolicy: defaultAccount.groupPolicy,
+          groupAllowFrom: defaultAccount.groupAllowFrom,
+          defaultTo: defaultAccount.defaultTo,
+        }
+      : null,
+  };
+}
+
 function hasConfigMeta(value: unknown): boolean {
   if (!isRecord(value)) {
     return false;
@@ -925,6 +961,7 @@ type ConfigReadResolution = {
 type LegacyMigrationResolution = {
   effectiveConfigRaw: unknown;
   sourceLegacyIssues: LegacyConfigIssue[];
+  runtimeCompatChanges: string[];
 };
 
 function resolveConfigIncludesForRead(
@@ -978,13 +1015,46 @@ function resolveLegacyConfigForRead(
     listPluginDoctorLegacyConfigRules({ pluginIds }),
   );
   if (!resolvedConfigRaw || typeof resolvedConfigRaw !== "object") {
-    return { effectiveConfigRaw: resolvedConfigRaw, sourceLegacyIssues };
+    return {
+      effectiveConfigRaw: resolvedConfigRaw,
+      sourceLegacyIssues,
+      runtimeCompatChanges: [],
+    };
   }
   const compat = applyRuntimeLegacyConfigMigrations(resolvedConfigRaw);
   return {
     effectiveConfigRaw: compat.next ?? resolvedConfigRaw,
     sourceLegacyIssues,
+    runtimeCompatChanges: compat.changes,
   };
+}
+
+function logRuntimeLegacyCompatDetails(params: {
+  logger: Required<ConfigIoDeps>["logger"];
+  configPath: string;
+  resolvedConfigRaw: unknown;
+  legacyResolution: LegacyMigrationResolution;
+}) {
+  if (params.legacyResolution.runtimeCompatChanges.length === 0) {
+    return;
+  }
+  params.logger.warn(
+    `Config (${params.configPath}): runtime legacy compat applied ${params.legacyResolution.runtimeCompatChanges.length} change(s): ${params.legacyResolution.runtimeCompatChanges.join(" | ")}`,
+  );
+
+  const before = summarizeWhatsAppCompatConfig(params.resolvedConfigRaw);
+  const after = summarizeWhatsAppCompatConfig(params.legacyResolution.effectiveConfigRaw);
+  if (!before && !after) {
+    return;
+  }
+  const beforeJson = JSON.stringify(before);
+  const afterJson = JSON.stringify(after);
+  if (beforeJson === afterJson) {
+    return;
+  }
+  params.logger.warn(
+    `Config (${params.configPath}): runtime legacy compat changed channels.whatsapp from ${sanitizeTerminalText(beforeJson)} to ${sanitizeTerminalText(afterJson)}`,
+  );
 }
 
 type ReadConfigFileSnapshotInternalResult = {
@@ -1116,6 +1186,12 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       );
       const resolvedConfig = readResolution.resolvedConfigRaw;
       const legacyResolution = resolveLegacyConfigForRead(resolvedConfig, effectiveParsed);
+      logRuntimeLegacyCompatDetails({
+        logger: deps.logger,
+        configPath,
+        resolvedConfigRaw: resolvedConfig,
+        legacyResolution,
+      });
       const effectiveConfigRaw = legacyResolution.effectiveConfigRaw;
       for (const w of readResolution.envWarnings) {
         deps.logger.warn(
@@ -1309,6 +1385,12 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
 
       const resolvedConfigRaw = readResolution.resolvedConfigRaw;
       const legacyResolution = resolveLegacyConfigForRead(resolvedConfigRaw, effectiveParsed);
+      logRuntimeLegacyCompatDetails({
+        logger: deps.logger,
+        configPath,
+        resolvedConfigRaw,
+        legacyResolution,
+      });
       const effectiveConfigRaw = legacyResolution.effectiveConfigRaw;
       const validated = validateConfigObjectWithPlugins(effectiveConfigRaw, { env: deps.env });
       if (!validated.ok) {
