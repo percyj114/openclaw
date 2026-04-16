@@ -350,6 +350,51 @@ describe("createScopedDmSecurityResolver", () => {
       normalizeEntry: expect.any(Function),
     });
   });
+
+  it("uses accounts.default paths when named accounts inherit shared defaults", () => {
+    const resolveDmPolicy = createScopedDmSecurityResolver<{
+      accountId?: string | null;
+      dmPolicy?: string;
+      allowFrom?: string[];
+    }>({
+      channelKey: "demo",
+      resolvePolicy: (account) => account.dmPolicy,
+      resolveAllowFrom: (account) => account.allowFrom,
+      policyPathSuffix: "dmPolicy",
+      normalizeEntry: (raw) => raw.toLowerCase(),
+    });
+
+    expect(
+      resolveDmPolicy({
+        cfg: {
+          channels: {
+            demo: {
+              accounts: {
+                default: {
+                  dmPolicy: "allowlist",
+                  allowFrom: ["Owner"],
+                },
+                alt: {},
+              },
+            },
+          },
+        },
+        accountId: "alt",
+        account: {
+          accountId: "alt",
+          dmPolicy: "allowlist",
+          allowFrom: ["Owner"],
+        },
+      }),
+    ).toEqual({
+      policy: "allowlist",
+      allowFrom: ["Owner"],
+      policyPath: "channels.demo.accounts.default.dmPolicy",
+      allowFromPath: "channels.demo.accounts.default.",
+      approveHint: formatPairingApproveHint("demo"),
+      normalizeEntry: expect.any(Function),
+    });
+  });
 });
 
 describe("createTopLevelChannelConfigBase", () => {

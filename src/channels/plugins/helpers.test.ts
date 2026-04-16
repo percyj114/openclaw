@@ -75,6 +75,32 @@ describe("buildAccountScopedDmSecurityPolicy", () => {
       },
     },
     {
+      name: "uses accounts.default paths when shared defaults are inherited",
+      input: {
+        cfg: cfgWithChannel("demo-default-account", {
+          default: {
+            dmPolicy: "allowlist",
+            allowFrom: ["+15550001111"],
+          },
+          work: {},
+        }),
+        channelKey: "demo-default-account",
+        accountId: "work",
+        fallbackAccountId: "default",
+        policy: "allowlist",
+        allowFrom: ["+15550001111"],
+        policyPathSuffix: "dmPolicy",
+      },
+      expected: {
+        policy: "allowlist",
+        allowFrom: ["+15550001111"],
+        policyPath: "channels.demo-default-account.accounts.default.dmPolicy",
+        allowFromPath: "channels.demo-default-account.accounts.default.",
+        approveHint: formatPairingApproveHint("demo-default-account"),
+        normalizeEntry: undefined,
+      },
+    },
+    {
       name: "supports custom defaults and approve hints",
       input: {
         cfg: cfgWithChannel("demo-default"),

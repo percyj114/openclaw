@@ -179,16 +179,27 @@ export function installWebAutoReplyUnitTestHooks(opts?: { pinDns?: boolean }) {
 
 export function createWebListenerFactoryCapture(): AnyExport {
   let capturedOnMessage: ((msg: WebInboundMessage) => Promise<void>) | undefined;
+  let capturedOptions:
+    | {
+        onMessage: (msg: WebInboundMessage) => Promise<void>;
+        debounceMs?: number;
+        selfChatMode?: boolean;
+      }
+    | undefined;
   const listenerFactory = async (opts: {
     onMessage: (msg: WebInboundMessage) => Promise<void>;
+    debounceMs?: number;
+    selfChatMode?: boolean;
   }) => {
     capturedOnMessage = opts.onMessage;
+    capturedOptions = opts;
     return { close: vi.fn() };
   };
 
   return {
     listenerFactory,
     getOnMessage: () => capturedOnMessage,
+    getLastOptions: () => capturedOptions,
   };
 }
 

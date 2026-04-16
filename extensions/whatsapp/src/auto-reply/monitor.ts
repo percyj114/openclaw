@@ -108,7 +108,7 @@ export async function monitorWebChannel(
   const reconnectPolicy = resolveReconnectPolicy(cfg, tuning.reconnect);
   const baseMentionConfig = buildMentionConfig(cfg);
   const groupHistoryLimit =
-    cfg.channels?.whatsapp?.accounts?.[tuning.accountId ?? ""]?.historyLimit ??
+    account.historyLimit ??
     cfg.channels?.whatsapp?.historyLimit ??
     cfg.messages?.groupChat?.historyLimit ??
     DEFAULT_GROUP_HISTORY_LIMIT;
@@ -166,7 +166,11 @@ export async function monitorWebChannel(
       }
 
       const connectionId = newConnectionId();
-      const inboundDebounceMs = resolveInboundDebounceMs({ cfg, channel: "whatsapp" });
+      const inboundDebounceMs = resolveInboundDebounceMs({
+        cfg,
+        channel: "whatsapp",
+        overrideMs: account.debounceMs,
+      });
       const shouldDebounce = (msg: WebInboundMsg) => {
         if (msg.mediaPath || msg.mediaType) {
           return false;
