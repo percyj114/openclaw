@@ -44,7 +44,10 @@ function resolveWhatsAppGroupScopeBasePath(params: {
   cfg: Parameters<typeof resolveWhatsAppAccount>[0]["cfg"];
   accountId?: string | null;
 }): string {
-  const accountId = params.accountId?.trim() || DEFAULT_ACCOUNT_ID;
+  const accountId =
+    typeof params.accountId === "string"
+      ? params.accountId.trim() || DEFAULT_ACCOUNT_ID
+      : DEFAULT_ACCOUNT_ID;
   const accounts = params.cfg.channels?.whatsapp?.accounts;
   const accountConfig = accounts?.[accountId];
   const defaultAccountConfig = accounts?.default;
