@@ -41,4 +41,13 @@ describe("resolveWhatsAppGroupSessionRoute", () => {
       }),
     ).toBe("agent:main:whatsapp:group:123@g.us");
   });
+
+  it("normalizes mixed-case account ids when resolving legacy scoped group keys", () => {
+    expect(
+      __testing.resolveWhatsAppLegacyGroupSessionKey({
+        accountId: "Work",
+        sessionKey: "agent:main:whatsapp:group:123@g.us:thread:whatsapp-account-work",
+      }),
+    ).toBe("agent:main:whatsapp:group:123@g.us");
+  });
 });

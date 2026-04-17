@@ -70,6 +70,21 @@ describe("config schema regressions", () => {
     expect(res.data.accounts?.work?.debounceMs).toBeUndefined();
   });
 
+  it("accepts WhatsApp allowlist accounts inheriting allowFrom from accounts.default", () => {
+    const res = WhatsAppConfigSchema.safeParse({
+      accounts: {
+        default: {
+          allowFrom: ["+15550001111"],
+        },
+        work: {
+          dmPolicy: "allowlist",
+        },
+      },
+    });
+
+    expect(res.success).toBe(true);
+  });
+
   it("accepts signal accountUuid for loop protection", () => {
     const res = SignalConfigSchema.safeParse({
       accountUuid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",

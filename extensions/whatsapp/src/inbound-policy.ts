@@ -86,9 +86,6 @@ export function resolveWhatsAppInboundPolicy(params: {
   });
   const isSamePhone = (value?: string | null) =>
     typeof value === "string" && typeof params.selfE164 === "string" && value === params.selfE164;
-  const effectiveSelfChatAllowFrom =
-    configuredAllowFrom.length > 0 ? configuredAllowFrom : dmAllowFrom;
-
   return {
     account,
     dmPolicy,
@@ -96,7 +93,7 @@ export function resolveWhatsAppInboundPolicy(params: {
     configuredAllowFrom,
     dmAllowFrom,
     groupAllowFrom,
-    isSelfChat: account.selfChatMode ?? isSelfChatMode(params.selfE164, effectiveSelfChatAllowFrom),
+    isSelfChat: account.selfChatMode ?? isSelfChatMode(params.selfE164, configuredAllowFrom),
     providerMissingFallbackApplied,
     shouldReadStorePairingApprovals: dmPolicy !== "allowlist",
     isSamePhone,

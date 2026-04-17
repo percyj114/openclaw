@@ -44,6 +44,7 @@ export function buildAccountScopedDmSecurityPolicy(params: {
   approveChannelId?: string;
   approveHint?: string;
   normalizeEntry?: (raw: string) => string;
+  inheritSharedDefaultsFromDefaultAccount?: boolean;
 }): ChannelSecurityDmPolicy {
   const resolvedAccountId = params.accountId ?? params.fallbackAccountId ?? DEFAULT_ACCOUNT_ID;
   const channelConfig = (params.cfg.channels as Record<string, unknown> | undefined)?.[
@@ -53,7 +54,10 @@ export function buildAccountScopedDmSecurityPolicy(params: {
   const accountBasePath = `channels.${params.channelKey}.accounts.${resolvedAccountId}.`;
   const defaultBasePath = `channels.${params.channelKey}.accounts.${DEFAULT_ACCOUNT_ID}.`;
   const accountConfig = channelConfig?.accounts?.[resolvedAccountId];
-  const defaultAccountConfig = channelConfig?.accounts?.[DEFAULT_ACCOUNT_ID];
+  const defaultAccountConfig =
+    params.inheritSharedDefaultsFromDefaultAccount && resolvedAccountId !== DEFAULT_ACCOUNT_ID
+      ? channelConfig?.accounts?.[DEFAULT_ACCOUNT_ID]
+      : undefined;
   const resolveFieldName = (suffix: string | undefined, fallbackField: string): string | null =>
     suffix == null || suffix === ""
       ? fallbackField

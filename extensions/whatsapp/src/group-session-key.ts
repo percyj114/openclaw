@@ -1,18 +1,19 @@
 import {
   DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
   resolveThreadSessionKeys,
   type ResolvedAgentRoute,
 } from "openclaw/plugin-sdk/routing";
 
 function resolveWhatsAppGroupAccountThreadId(accountId: string): string {
-  return `whatsapp-account-${accountId}`;
+  return `whatsapp-account-${normalizeAccountId(accountId)}`;
 }
 
 export function resolveWhatsAppLegacyGroupSessionKey(params: {
   sessionKey: string;
   accountId?: string | null;
 }): string | null {
-  const accountId = (params.accountId ?? "").trim();
+  const accountId = normalizeAccountId(params.accountId);
   if (!accountId || accountId === DEFAULT_ACCOUNT_ID || !params.sessionKey.includes(":group:")) {
     return null;
   }

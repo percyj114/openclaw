@@ -96,6 +96,7 @@ const whatsappResolveDmPolicy = createScopedDmSecurityResolver<ResolvedWhatsAppA
   resolveAllowFrom: (account) => account.allowFrom,
   policyPathSuffix: "dmPolicy",
   normalizeEntry: (raw) => normalizeE164(raw),
+  inheritSharedDefaultsFromDefaultAccount: true,
 });
 
 export function createWhatsAppSetupWizardProxy(

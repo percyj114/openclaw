@@ -26,7 +26,7 @@ import {
   sleepWithAbort,
 } from "../reconnect.js";
 import { formatError, getWebAuthAgeMs, readWebSelfId } from "../session.js";
-import { loadConfig } from "./config.runtime.js";
+import { getRuntimeConfigSourceSnapshot, loadConfig } from "./config.runtime.js";
 import { whatsappHeartbeatLog, whatsappLog } from "./loggers.js";
 import { buildMentionConfig } from "./mentions.js";
 import { createWebChannelStatusController } from "./monitor-state.js";
@@ -59,6 +59,31 @@ function isNoListenerReconnectError(lastError?: string): boolean {
   return typeof lastError === "string" && /No active WhatsApp Web listener/i.test(lastError);
 }
 
+function resolveExplicitWhatsAppDebounceOverride(params: {
+  cfg: ReturnType<typeof loadConfig>;
+  sourceCfg?: ReturnType<typeof loadConfig> | null;
+  accountId: string;
+}): number | undefined {
+  const channel = params.sourceCfg?.channels?.whatsapp ?? params.cfg.channels?.whatsapp;
+  if (!channel) {
+    return undefined;
+  }
+
+  const accountId = normalizeReconnectAccountId(params.accountId);
+  if (accountId !== "default") {
+    const accountDebounce = channel.accounts?.[accountId]?.debounceMs;
+    if (accountDebounce !== undefined) {
+      return accountDebounce;
+    }
+    const defaultAccountDebounce = channel.accounts?.default?.debounceMs;
+    if (defaultAccountDebounce !== undefined) {
+      return defaultAccountDebounce;
+    }
+  }
+
+  return channel.debounceMs;
+}
+
 export async function monitorWebChannel(
   verbose: boolean,
   listenerFactory: typeof attachWebInboxToSocket | undefined = attachWebInboxToSocket,
@@ -79,6 +104,7 @@ export async function monitorWebChannel(
   statusController.emit();
 
   const baseCfg = loadConfig();
+  const sourceCfg = getRuntimeConfigSourceSnapshot();
   const account = resolveWhatsAppAccount({
     cfg: baseCfg,
     accountId: tuning.accountId,
@@ -169,7 +195,11 @@ export async function monitorWebChannel(
       const inboundDebounceMs = resolveInboundDebounceMs({
         cfg,
         channel: "whatsapp",
-        overrideMs: account.debounceMs,
+        overrideMs: resolveExplicitWhatsAppDebounceOverride({
+          cfg,
+          sourceCfg,
+          accountId: account.accountId,
+        }),
       });
       const shouldDebounce = (msg: WebInboundMsg) => {
         if (msg.mediaPath || msg.mediaType) {

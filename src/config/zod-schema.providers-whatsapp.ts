@@ -144,6 +144,7 @@ export const WhatsAppConfigSchema = z
   })
   .strict()
   .superRefine((value, ctx) => {
+    const defaultAccount = value.accounts?.default;
     enforceOpenDmPolicyAllowFromStar({
       dmPolicy: value.dmPolicy,
       allowFrom: value.allowFrom,
@@ -165,8 +166,14 @@ export const WhatsAppConfigSchema = z
       if (!account) {
         continue;
       }
-      const effectivePolicy = account.dmPolicy ?? value.dmPolicy;
-      const effectiveAllowFrom = account.allowFrom ?? value.allowFrom;
+      const effectivePolicy =
+        account.dmPolicy ??
+        (accountId === "default" ? undefined : defaultAccount?.dmPolicy) ??
+        value.dmPolicy;
+      const effectiveAllowFrom =
+        account.allowFrom ??
+        (accountId === "default" ? undefined : defaultAccount?.allowFrom) ??
+        value.allowFrom;
       enforceOpenDmPolicyAllowFromStar({
         dmPolicy: effectivePolicy,
         allowFrom: effectiveAllowFrom,

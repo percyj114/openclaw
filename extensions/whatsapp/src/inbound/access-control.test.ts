@@ -202,12 +202,39 @@ describe("WhatsApp dmPolicy precedence", () => {
     expect(sendMessageMock).not.toHaveBeenCalled();
   });
 
-  it("treats same-phone DMs as self-chat when using the implicit self allowlist fallback", async () => {
+  it("does not broaden self-chat mode to every paired DM when allowFrom is empty", async () => {
     const cfg = {
       channels: {
         whatsapp: {
           dmPolicy: "pairing",
           allowFrom: [],
+        },
+      },
+    };
+    setAccessControlTestConfig(cfg);
+
+    const result = await checkInboundAccessControl({
+      accountId: "default",
+      from: "+15550001111",
+      selfE164: "+15550009999",
+      senderE164: "+15550001111",
+      group: false,
+      pushName: "Sam",
+      isFromMe: false,
+      sock: { sendMessage: sendMessageMock },
+      remoteJid: "15550001111@s.whatsapp.net",
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.isSelfChat).toBe(false);
+  });
+
+  it("treats same-phone DMs as self-chat only when explicitly configured", async () => {
+    const cfg = {
+      channels: {
+        whatsapp: {
+          dmPolicy: "pairing",
+          allowFrom: ["+15550009999"],
         },
       },
     };
