@@ -87,4 +87,55 @@ describe("resolveGroupActivationFor", () => {
       expect(scopedEntry?.sessionId).toBe("scoped-session");
     });
   });
+
+  it("does not wake the default account from an activation-only legacy group entry in multi-account setups", async () => {
+    const defaultSessionKey = "agent:main:whatsapp:group:123@g.us";
+    const workSessionKey = "agent:main:whatsapp:group:123@g.us:thread:whatsapp-account-work";
+    const { storePath, cleanup } = await makeSessionStore({
+      [defaultSessionKey]: {
+        groupActivation: "always",
+      },
+    });
+    cleanups.push(cleanup);
+
+    const cfg = {
+      channels: {
+        whatsapp: {
+          groups: {
+            "*": {
+              requireMention: true,
+            },
+          },
+          accounts: {
+            work: {},
+          },
+        },
+      },
+      session: { store: storePath },
+    } as never;
+
+    const workActivation = await resolveGroupActivationFor({
+      cfg,
+      accountId: "work",
+      agentId: "main",
+      sessionKey: workSessionKey,
+      conversationId: "123@g.us",
+    });
+
+    expect(workActivation).toBe("always");
+
+    const defaultActivation = await resolveGroupActivationFor({
+      cfg,
+      accountId: "default",
+      agentId: "main",
+      sessionKey: defaultSessionKey,
+      conversationId: "123@g.us",
+    });
+
+    expect(defaultActivation).toBe("mention");
+    await vi.waitFor(() => {
+      const scopedEntry = loadSessionStore(storePath, { skipCache: true })[workSessionKey];
+      expect(scopedEntry?.groupActivation).toBe("always");
+    });
+  });
 });
