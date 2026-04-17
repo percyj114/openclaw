@@ -47,6 +47,17 @@ vi.mock("./doctor/shared/channel-legacy-config-migrate.js", () => ({
   }),
 }));
 
+function asLegacyConfig(value: unknown): OpenClawConfig {
+  return value as OpenClawConfig;
+}
+
+function getLegacyProperty(value: unknown, key: string): unknown {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+  return (value as Record<string, unknown>)[key];
+}
+
 describe("normalizeCompatibilityConfigValues", () => {
   let previousOauthDir: string | undefined;
   let tempOauthDir = "";
