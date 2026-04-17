@@ -34,6 +34,13 @@ import type { WebInboundMessage, WebListenerCloseReason } from "./types.js";
 const LOGGED_OUT_STATUS = DisconnectReason?.loggedOut ?? 401;
 const RECONNECT_IN_PROGRESS_ERROR = "no active socket - reconnection in progress";
 
+function formatInboundError(err: unknown): string {
+  if (err instanceof Error) {
+    return err.stack ?? err.message;
+  }
+  return String(err);
+}
+
 function isGroupJid(jid: string): boolean {
   return (typeof isJidGroup === "function" ? isJidGroup(jid) : jid.endsWith("@g.us")) === true;
 }
@@ -202,8 +209,9 @@ export async function attachWebInboxToSocket(
       }
     },
     onError: (err) => {
-      inboundLogger.error({ error: String(err) }, "failed handling inbound web message");
-      inboundConsoleLog.error(`Failed handling inbound web message: ${String(err)}`);
+      const formattedError = formatInboundError(err);
+      inboundLogger.error({ error: formattedError }, "failed handling inbound web message");
+      inboundConsoleLog.error(`Failed handling inbound web message: ${formattedError}`);
     },
   });
   const groupMetaCache = new Map<
@@ -557,12 +565,14 @@ export async function attachWebInboxToSocket(
     try {
       const task = Promise.resolve(debouncer.enqueue(inboundMessage));
       void task.catch((err) => {
-        inboundLogger.error({ error: String(err) }, "failed handling inbound web message");
-        inboundConsoleLog.error(`Failed handling inbound web message: ${String(err)}`);
+        const formattedError = formatInboundError(err);
+        inboundLogger.error({ error: formattedError }, "failed handling inbound web message");
+        inboundConsoleLog.error(`Failed handling inbound web message: ${formattedError}`);
       });
     } catch (err) {
-      inboundLogger.error({ error: String(err) }, "failed handling inbound web message");
-      inboundConsoleLog.error(`Failed handling inbound web message: ${String(err)}`);
+      const formattedError = formatInboundError(err);
+      inboundLogger.error({ error: formattedError }, "failed handling inbound web message");
+      inboundConsoleLog.error(`Failed handling inbound web message: ${formattedError}`);
     }
   };
 
