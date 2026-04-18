@@ -270,6 +270,42 @@ describe("applyGroupGating", () => {
     expect(result.shouldProcess).toBe(true);
   });
 
+  it("inherits group gating defaults from accounts.default for named accounts", async () => {
+    const cfg = makeConfig({
+      channels: {
+        whatsapp: {
+          groupPolicy: "allowlist",
+          accounts: {
+            default: {
+              groupPolicy: "open",
+              groups: {
+                "*": {
+                  requireMention: false,
+                },
+              },
+            },
+            work: {},
+          },
+        },
+      },
+    });
+
+    const { result } = await runGroupGating({
+      cfg,
+      msg: createGroupMessage({
+        id: "g-default-inheritance",
+        accountId: "work",
+        body: "plain group message",
+        senderE164: "+111",
+        senderJid: "111@s.whatsapp.net",
+        selfJid: "15551234567@s.whatsapp.net",
+        selfE164: "+15551234567",
+      }),
+    });
+
+    expect(result.shouldProcess).toBe(true);
+  });
+
   it("uses account-scoped allowFrom when bypassing mention gating for owner commands", async () => {
     const cfg = makeConfig({
       channels: {

@@ -61,6 +61,20 @@ function isNormalizedSenderAllowed(allowEntries: string[], sender?: string | nul
   return normalizedEntrySet.has(normalizedSender);
 }
 
+function buildResolvedWhatsAppGroupConfig(params: {
+  groupPolicy: GroupPolicy;
+  groups: ResolvedWhatsAppAccount["groups"];
+}): OpenClawConfig {
+  return {
+    channels: {
+      whatsapp: {
+        groupPolicy: params.groupPolicy,
+        groups: params.groups,
+      },
+    },
+  } as OpenClawConfig;
+}
+
 export function resolveWhatsAppInboundPolicy(params: {
   cfg: OpenClawConfig;
   accountId?: string | null;
@@ -84,6 +98,10 @@ export function resolveWhatsAppInboundPolicy(params: {
     groupPolicy: account.groupPolicy,
     defaultGroupPolicy,
   });
+  const resolvedGroupCfg = buildResolvedWhatsAppGroupConfig({
+    groupPolicy,
+    groups: account.groups,
+  });
   const isSamePhone = (value?: string | null) =>
     typeof value === "string" && typeof params.selfE164 === "string" && value === params.selfE164;
   return {
@@ -102,17 +120,15 @@ export function resolveWhatsAppInboundPolicy(params: {
     isGroupSenderAllowed: (allowEntries, sender) => isNormalizedSenderAllowed(allowEntries, sender),
     resolveConversationGroupPolicy: (conversationId) =>
       resolveChannelGroupPolicy({
-        cfg: params.cfg,
+        cfg: resolvedGroupCfg,
         channel: "whatsapp",
-        accountId: account.accountId,
         groupId: resolveGroupConversationId(conversationId),
         hasGroupAllowFrom: groupAllowFrom.length > 0,
       }),
     resolveConversationRequireMention: (conversationId) =>
       resolveChannelGroupRequireMention({
-        cfg: params.cfg,
+        cfg: resolvedGroupCfg,
         channel: "whatsapp",
-        accountId: account.accountId,
         groupId: resolveGroupConversationId(conversationId),
       }),
   };

@@ -1,3 +1,4 @@
+import { resolveAccountEntry } from "openclaw/plugin-sdk/account-core";
 import { resolveInboundDebounceMs } from "openclaw/plugin-sdk/channel-inbound";
 import { formatCliCommand } from "openclaw/plugin-sdk/cli-runtime";
 import { hasControlCommand } from "openclaw/plugin-sdk/command-detection";
@@ -71,11 +72,11 @@ function resolveExplicitWhatsAppDebounceOverride(params: {
 
   const accountId = normalizeReconnectAccountId(params.accountId);
   if (accountId !== "default") {
-    const accountDebounce = channel.accounts?.[accountId]?.debounceMs;
+    const accountDebounce = resolveAccountEntry(channel.accounts, accountId)?.debounceMs;
     if (accountDebounce !== undefined) {
       return accountDebounce;
     }
-    const defaultAccountDebounce = channel.accounts?.default?.debounceMs;
+    const defaultAccountDebounce = resolveAccountEntry(channel.accounts, "default")?.debounceMs;
     if (defaultAccountDebounce !== undefined) {
       return defaultAccountDebounce;
     }
