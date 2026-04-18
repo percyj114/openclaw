@@ -17,6 +17,7 @@ import {
   resetLoadConfigMock,
   sendWebDirectInboundMessage,
   setLoadConfigMock,
+  setRuntimeConfigSourceSnapshotMock,
   startWebAutoReplyMonitor,
 } from "./auto-reply.test-harness.js";
 
@@ -294,6 +295,7 @@ describe("web auto-reply connection", () => {
         },
       },
     } as OpenClawConfig);
+    setRuntimeConfigSourceSnapshotMock(null);
 
     await monitorWebChannel(
       false,

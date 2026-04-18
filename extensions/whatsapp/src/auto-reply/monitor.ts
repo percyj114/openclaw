@@ -64,7 +64,7 @@ function resolveExplicitWhatsAppDebounceOverride(params: {
   sourceCfg?: ReturnType<typeof loadConfig> | null;
   accountId: string;
 }): number | undefined {
-  const channel = params.sourceCfg?.channels?.whatsapp ?? params.cfg.channels?.whatsapp;
+  const channel = params.sourceCfg?.channels?.whatsapp;
   if (!channel) {
     return undefined;
   }

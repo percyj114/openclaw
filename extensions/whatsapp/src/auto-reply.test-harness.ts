@@ -12,7 +12,12 @@ import {
   resetLoadConfigMock as _resetLoadConfigMock,
 } from "./test-helpers.js";
 
-export { resetBaileysMocks, resetLoadConfigMock, setLoadConfigMock } from "./test-helpers.js";
+export {
+  resetBaileysMocks,
+  resetLoadConfigMock,
+  setLoadConfigMock,
+  setRuntimeConfigSourceSnapshotMock,
+} from "./test-helpers.js";
 
 // Avoid exporting inferred vitest mock types (TS2742 under pnpm + d.ts emit).
 type AnyExport = any;
