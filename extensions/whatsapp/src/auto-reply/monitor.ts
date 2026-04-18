@@ -71,11 +71,11 @@ function resolveExplicitWhatsAppDebounceOverride(params: {
   }
 
   const accountId = normalizeReconnectAccountId(params.accountId);
+  const accountDebounce = resolveAccountEntry(channel.accounts, accountId)?.debounceMs;
+  if (accountDebounce !== undefined) {
+    return accountDebounce;
+  }
   if (accountId !== "default") {
-    const accountDebounce = resolveAccountEntry(channel.accounts, accountId)?.debounceMs;
-    if (accountDebounce !== undefined) {
-      return accountDebounce;
-    }
     const defaultAccountDebounce = resolveAccountEntry(channel.accounts, "default")?.debounceMs;
     if (defaultAccountDebounce !== undefined) {
       return defaultAccountDebounce;
