@@ -1,6 +1,7 @@
 import path from "node:path";
 import {
   DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
   normalizeAllowFromEntries,
   normalizeE164,
   pathExists,
@@ -36,7 +37,7 @@ function shouldWriteDefaultWhatsAppAccountConfigAtAccountScope(cfg: OpenClawConf
     return true;
   }
   return Object.keys(accounts).some(
-    (accountId) => accountId.trim() && accountId !== DEFAULT_ACCOUNT_ID,
+    (accountId) => normalizeAccountId(accountId) !== DEFAULT_ACCOUNT_ID,
   );
 }
 

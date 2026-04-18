@@ -138,4 +138,38 @@ describe("resolveGroupActivationFor", () => {
       expect(scopedEntry?.groupActivation).toBe("always");
     });
   });
+
+  it("does not treat mixed-case default account keys as named accounts", async () => {
+    const defaultSessionKey = "agent:main:whatsapp:group:123@g.us";
+    const { storePath, cleanup } = await makeSessionStore({
+      [defaultSessionKey]: {
+        groupActivation: "always",
+      },
+    });
+    cleanups.push(cleanup);
+
+    const activation = await resolveGroupActivationFor({
+      cfg: {
+        channels: {
+          whatsapp: {
+            groups: {
+              "*": {
+                requireMention: true,
+              },
+            },
+            accounts: {
+              Default: {},
+            },
+          },
+        },
+        session: { store: storePath },
+      } as never,
+      accountId: "default",
+      agentId: "main",
+      sessionKey: defaultSessionKey,
+      conversationId: "123@g.us",
+    });
+
+    expect(activation).toBe("always");
+  });
 });
