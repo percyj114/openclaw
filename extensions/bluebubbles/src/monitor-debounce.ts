@@ -47,6 +47,18 @@ export type BlueBubblesDebounceRegistry = {
 const DEFAULT_INBOUND_DEBOUNCE_MS = 500;
 
 /**
+ * Bounds on the combined output when multiple inbound events are merged into
+ * one agent turn. Guards against amplification from a sender who rapid-fires
+ * many small DMs inside the debounce window (concern raised on #69258): the
+ * merged text, attachment list, and source-message count are each capped so
+ * a flood cannot balloon a single agent prompt beyond a safe ceiling.
+ * Callers still see every messageId via inbound-dedupe.
+ */
+const MAX_COALESCED_TEXT_CHARS = 4000;
+const MAX_COALESCED_ATTACHMENTS = 20;
+const MAX_COALESCED_ENTRIES = 10;
+
+/**
  * Combines multiple debounced messages into a single message for processing.
  * Used when multiple webhook events arrive within the debounce window.
  */
@@ -61,11 +73,21 @@ function combineDebounceEntries(entries: BlueBubblesDebounceEntry[]): Normalized
   // Use the first message as the base (typically the text message)
   const first = entries[0].message;
 
-  // Combine text from all entries, filtering out duplicates and empty strings
+  // Cap the number of source entries we fold into the merged view so a sender
+  // who rapid-fires many small DMs cannot amplify the downstream prompt.
+  // Prefer the first and the most recent — the first preserves the original
+  // command/context and the last preserves the most recent payload — rather
+  // than dropping either tail of the sequence.
+  const boundedEntries =
+    entries.length > MAX_COALESCED_ENTRIES
+      ? [...entries.slice(0, MAX_COALESCED_ENTRIES - 1), entries[entries.length - 1]]
+      : entries;
+
+  // Combine text from bounded entries, filtering out duplicates and empty strings
   const seenTexts = new Set<string>();
   const textParts: string[] = [];
 
-  for (const entry of entries) {
+  for (const entry of boundedEntries) {
     const text = normalizeDebounceMessageText(entry.message.text).trim();
     if (!text) {
       continue;
@@ -79,8 +101,16 @@ function combineDebounceEntries(entries: BlueBubblesDebounceEntry[]): Normalized
     textParts.push(text);
   }
 
-  // Merge attachments from all entries
-  const allAttachments = entries.flatMap((e) => e.message.attachments ?? []);
+  let combinedText = textParts.join(" ");
+  if (combinedText.length > MAX_COALESCED_TEXT_CHARS) {
+    combinedText = `${combinedText.slice(0, MAX_COALESCED_TEXT_CHARS)}…[truncated]`;
+  }
+
+  // Merge attachments from bounded entries, capped to keep downstream media
+  // fan-out proportional to what a single message would carry.
+  const allAttachments = boundedEntries
+    .flatMap((e) => e.message.attachments ?? [])
+    .slice(0, MAX_COALESCED_ATTACHMENTS);
 
   // Use the latest timestamp
   const timestamps = entries
@@ -96,7 +126,7 @@ function combineDebounceEntries(entries: BlueBubblesDebounceEntry[]): Normalized
 
   return {
     ...first,
-    text: textParts.join(" "),
+    text: combinedText,
     attachments: allAttachments.length > 0 ? allAttachments : first.attachments,
     timestamp: latestTimestamp,
     // Use first message's ID as primary (for reply reference), but we've coalesced others

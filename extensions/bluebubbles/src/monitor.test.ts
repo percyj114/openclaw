@@ -1032,6 +1032,54 @@ describe("BlueBubbles webhook monitor", () => {
       }
     });
 
+    it("bounds the coalesced output when many messages merge into one turn", async () => {
+      vi.useFakeTimers();
+      try {
+        const core = createMockRuntime();
+        installTimingAwareInboundDebouncer(core);
+        const processMessage = vi.fn().mockResolvedValue(undefined);
+        const registry = createBlueBubblesDebounceRegistry({ processMessage });
+        const account = createMockAccount({ coalesceSameSenderDms: true });
+        const target = {
+          account,
+          config: {},
+          runtime: { log: vi.fn(), error: vi.fn() },
+          core,
+          path: "/bluebubbles-webhook",
+        };
+        const debouncer = registry.getOrCreateDebouncer(target);
+
+        const chatGuid = "iMessage;-;+15551234567";
+        // Use a unique long text block per entry to exceed MAX_COALESCED_TEXT_CHARS (4000)
+        // after naive concatenation. 25 entries × ~400 chars ≈ 10_000 chars worth of content.
+        const blob = "x".repeat(400);
+        for (let i = 0; i < 25; i++) {
+          await debouncer.enqueue({
+            message: createDebounceTestMessage({
+              chatGuid,
+              text: `msg-${i}-${blob}`,
+              messageId: `flood-${i}`,
+              attachments: [{ guid: `att-${i}`, mimeType: "image/jpeg", totalBytes: 1024 }],
+            }),
+            target,
+          });
+          await vi.advanceTimersByTimeAsync(10);
+        }
+
+        await vi.advanceTimersByTimeAsync(600);
+
+        expect(processMessage).toHaveBeenCalledTimes(1);
+        const [merged] = processMessage.mock.calls[0] as [NormalizedWebhookMessage, unknown];
+        // Text is truncated with explicit marker instead of ballooning.
+        expect(merged.text.length).toBeLessThanOrEqual(4000 + "…[truncated]".length);
+        expect(merged.text.endsWith("…[truncated]")).toBe(true);
+        // Attachments are capped so downstream media fan-out stays bounded.
+        expect(merged.attachments?.length).toBeLessThanOrEqual(20);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it("does not coalesce group-chat messages even with coalesceSameSenderDms enabled", async () => {
       vi.useFakeTimers();
       try {
