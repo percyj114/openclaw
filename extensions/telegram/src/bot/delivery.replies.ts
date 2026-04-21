@@ -591,6 +591,7 @@ export async function deliverReplies(params: {
   chatId: string;
   accountId?: string;
   sessionKeyForInternalHooks?: string;
+  policySessionKey?: string;
   mirrorIsGroup?: boolean;
   mirrorGroupId?: string;
   token: string;
@@ -638,7 +639,7 @@ export async function deliverReplies(params: {
   const normalizedReplies = projectOutboundPayloadPlanForDelivery(
     createOutboundPayloadPlan(candidateReplies, {
       cfg: params.cfg,
-      sessionKey: params.sessionKeyForInternalHooks,
+      sessionKey: params.policySessionKey ?? params.sessionKeyForInternalHooks,
       surface: "telegram",
     }),
   );
