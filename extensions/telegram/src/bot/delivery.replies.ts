@@ -646,13 +646,12 @@ export async function deliverReplies(params: {
     (reply) => typeof reply.text === "string" && reply.text.trim().toUpperCase() === "NO_REPLY",
   ).length;
   if (originalExactSilentCount > 0) {
-    silentReplyLogger.info("telegram delivery normalized NO_REPLY candidates", {
-      sessionKey: params.sessionKeyForInternalHooks,
-      chatId: params.chatId,
+    silentReplyLogger.debug("telegram delivery normalized NO_REPLY candidates", {
+      hasSessionKey: Boolean(params.sessionKeyForInternalHooks),
+      hasChatId: params.chatId.length > 0,
       originalCount: candidateReplies.length,
       normalizedCount: normalizedReplies.length,
       originalExactSilentCount,
-      normalizedTexts: normalizedReplies.map((reply) => reply.text ?? ""),
     });
   }
   for (const originalReply of normalizedReplies) {

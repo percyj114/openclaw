@@ -2588,6 +2588,45 @@ describe("dispatchTelegramMessage draft streaming", () => {
     expect(deliveredReplies?.[0]?.text?.trim()).not.toBe("NO_REPLY");
   });
 
+  it("does not add silent-reply fallback after visible block delivery", async () => {
+    const draftStream = createDraftStream(999);
+    createTelegramDraftStream.mockReturnValue(draftStream);
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ dispatcherOptions }) => {
+      await dispatcherOptions.deliver({ text: "visible block" }, { kind: "block" });
+      return { queuedFinal: false };
+    });
+    deliverReplies.mockResolvedValue({ delivered: true });
+
+    await dispatchWithContext({
+      context: createContext({
+        ctxPayload: {
+          SessionKey: "agent:main:telegram:direct:123",
+        } as unknown as TelegramMessageContext["ctxPayload"],
+      }),
+      cfg: {
+        agents: {
+          defaults: {
+            silentReply: {
+              direct: "disallow",
+              group: "allow",
+              internal: "allow",
+            },
+            silentReplyRewrite: {
+              direct: true,
+            },
+          },
+        },
+      } as unknown as OpenClawConfig,
+    });
+
+    expect(deliverReplies).toHaveBeenCalledTimes(1);
+    expect(deliverReplies).toHaveBeenCalledWith(
+      expect.objectContaining({
+        replies: [expect.objectContaining({ text: "visible block" })],
+      }),
+    );
+  });
+
   it("keeps no-visible-response group turns silent when policy allows silence", async () => {
     const draftStream = createDraftStream(999);
     createTelegramDraftStream.mockReturnValue(draftStream);
@@ -2606,7 +2645,7 @@ describe("dispatchTelegramMessage draft streaming", () => {
           message_id: 456,
           message_thread_id: 777,
         } as TelegramMessageContext["msg"],
-        threadSpec: { id: 777, scope: "group" },
+        threadSpec: { id: 777, scope: "forum" },
         ctxPayload: {
           SessionKey: "agent:main:telegram:group:123",
         } as unknown as TelegramMessageContext["ctxPayload"],

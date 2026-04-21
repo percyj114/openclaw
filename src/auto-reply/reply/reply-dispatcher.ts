@@ -138,8 +138,8 @@ function shouldPreserveSilentFinalPayload(params: {
   });
   const shouldPreserve = resolvedPolicy !== "allow";
   if (shouldPreserve) {
-    silentReplyLogger.info("preserving exact NO_REPLY final payload before normalization", {
-      sessionKey: context.sessionKey,
+    silentReplyLogger.debug("preserving exact NO_REPLY final payload before normalization", {
+      hasSessionKey: Boolean(context.sessionKey),
       surface: context.surface,
       conversationType: context.conversationType,
       resolvedPolicy,
@@ -196,8 +196,8 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
         });
     if (!normalized) {
       if (kind === "final" && originalWasExactSilent) {
-        silentReplyLogger.info("exact NO_REPLY final payload was skipped before delivery", {
-          sessionKey: options.silentReplyContext?.sessionKey,
+        silentReplyLogger.debug("exact NO_REPLY final payload was skipped before delivery", {
+          hasSessionKey: Boolean(options.silentReplyContext?.sessionKey),
           surface: options.silentReplyContext?.surface,
           conversationType: options.silentReplyContext?.conversationType,
         });

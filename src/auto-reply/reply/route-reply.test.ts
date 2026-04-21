@@ -255,6 +255,7 @@ describe("routeReply", () => {
 
     expect(res.ok).toBe(true);
     expectLastDelivery({
+      payloads: [expect.objectContaining({ text: SILENT_REPLY_TOKEN })],
       session: expect.objectContaining({
         key: "agent:test:telegram:slash:8231046597",
         policyKey: "agent:test:telegram:direct:8231046597",

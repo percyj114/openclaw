@@ -12,6 +12,7 @@ import { resolveEffectiveMessagesConfig } from "../../agents/identity.js";
 import { getBundledChannelPlugin } from "../../channels/plugins/bundled.js";
 import { getLoadedChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import { normalizeChatChannelId } from "../../channels/registry.js";
+import { resolveSilentReplyPolicy } from "../../config/silent-reply.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { buildOutboundSessionContext } from "../../infra/outbound/session-context.js";
@@ -19,6 +20,7 @@ import { hasReplyPayloadContent } from "../../interactive/payload.js";
 import { normalizeOptionalLowercaseString } from "../../shared/string-coerce.js";
 import { INTERNAL_MESSAGE_CHANNEL, normalizeMessageChannel } from "../../utils/message-channel.js";
 import type { OriginatingChannelType } from "../templating.js";
+import { isSilentReplyPayloadText, SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { ReplyPayload } from "../types.js";
 import { normalizeReplyPayload } from "./normalize-reply.js";
 import {
@@ -116,17 +118,30 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
     : cfg.messages?.responsePrefix === "auto"
       ? undefined
       : cfg.messages?.responsePrefix;
-  const normalized = normalizeReplyPayload(payload, {
-    responsePrefix,
-    transformReplyPayload: messaging?.transformReplyPayload
-      ? (nextPayload) =>
-          messaging.transformReplyPayload?.({
-            payload: nextPayload,
-            cfg,
-            accountId,
-          }) ?? nextPayload
-      : undefined,
-  });
+  const policySessionKey = params.policySessionKey ?? params.sessionKey;
+  const shouldPreserveSilentPayload =
+    isSilentReplyPayloadText(payload.text) &&
+    resolveSilentReplyPolicy({
+      cfg,
+      sessionKey: policySessionKey,
+      surface: channelId ?? String(channel),
+    }) !== "allow";
+  const normalized = shouldPreserveSilentPayload
+    ? {
+        ...payload,
+        text: payload.text?.trim() || SILENT_REPLY_TOKEN,
+      }
+    : normalizeReplyPayload(payload, {
+        responsePrefix,
+        transformReplyPayload: messaging?.transformReplyPayload
+          ? (nextPayload) =>
+              messaging.transformReplyPayload?.({
+                payload: nextPayload,
+                cfg,
+                accountId,
+              }) ?? nextPayload
+          : undefined,
+      });
   if (!normalized) {
     return { ok: true };
   }

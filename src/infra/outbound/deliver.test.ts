@@ -868,6 +868,57 @@ describe("deliverOutboundPayloads", () => {
     );
   });
 
+  it("applies silent-reply policy from the outbound session", async () => {
+    const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w-silent", toJid: "jid" });
+    const cfg: OpenClawConfig = {
+      agents: {
+        defaults: {
+          silentReply: {
+            direct: "disallow",
+            group: "allow",
+            internal: "allow",
+          },
+          silentReplyRewrite: {
+            direct: true,
+          },
+        },
+      },
+    };
+
+    await deliverOutboundPayloads({
+      cfg,
+      channel: "whatsapp",
+      to: "+1555",
+      payloads: [{ text: "NO_REPLY" }],
+      deps: { whatsapp: sendWhatsApp },
+      session: {
+        key: "agent:main:whatsapp:slash:+1555",
+        policyKey: "agent:main:whatsapp:direct:+1555",
+      },
+    });
+
+    expect(sendWhatsApp).toHaveBeenCalledTimes(1);
+    expect(sendWhatsApp.mock.calls[0]?.[1]).toEqual(expect.any(String));
+    expect(sendWhatsApp.mock.calls[0]?.[1]).not.toBe("NO_REPLY");
+  });
+
+  it("keeps allowed group silent replies silent during outbound delivery", async () => {
+    const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w-silent", toJid: "jid" });
+
+    await deliverOutboundPayloads({
+      cfg: whatsappChunkConfig,
+      channel: "whatsapp",
+      to: "+1555",
+      payloads: [{ text: "NO_REPLY" }],
+      deps: { whatsapp: sendWhatsApp },
+      session: {
+        key: "agent:main:whatsapp:group:ops",
+      },
+    });
+
+    expect(sendWhatsApp).not.toHaveBeenCalled();
+  });
+
   it("acks the queue entry when delivery is aborted", async () => {
     const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w1", toJid: "jid" });
     const abortController = new AbortController();

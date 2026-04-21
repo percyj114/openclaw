@@ -19,6 +19,7 @@ import type { ChannelGroupPolicy } from "openclaw/plugin-sdk/config-runtime";
 import type {
   ReplyToMode,
   TelegramAccountConfig,
+  TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
 } from "openclaw/plugin-sdk/config-runtime";
@@ -89,6 +90,10 @@ type TelegramNativeReplyChannelData = {
   buttons?: TelegramInlineButtons;
   pin?: boolean;
 };
+type TelegramResolvedGroupConfig = {
+  groupConfig?: TelegramGroupConfig | TelegramDirectConfig;
+  topicConfig?: TelegramTopicConfig;
+};
 
 type TelegramCommandAuthResult = {
   chatId: number;
@@ -97,7 +102,7 @@ type TelegramCommandAuthResult = {
   resolvedThreadId?: number;
   senderId: string;
   senderUsername: string;
-  groupConfig?: TelegramGroupConfig;
+  groupConfig?: TelegramGroupConfig | TelegramDirectConfig;
   topicConfig?: TelegramTopicConfig;
   commandAuthorized: boolean;
 };
@@ -186,7 +191,7 @@ export type RegisterTelegramHandlerParams = {
   resolveTelegramGroupConfig: (
     chatId: string | number,
     messageThreadId?: number,
-  ) => { groupConfig?: TelegramGroupConfig; topicConfig?: TelegramTopicConfig };
+  ) => TelegramResolvedGroupConfig;
   shouldSkipUpdate: (ctx: TelegramUpdateKeyContext) => boolean;
   processMessage: (
     ctx: TelegramContext,
@@ -239,7 +244,7 @@ export type RegisterTelegramNativeCommandsParams = {
   resolveTelegramGroupConfig: (
     chatId: string | number,
     messageThreadId?: number,
-  ) => { groupConfig?: TelegramGroupConfig; topicConfig?: TelegramTopicConfig };
+  ) => TelegramResolvedGroupConfig;
   shouldSkipUpdate: (ctx: TelegramUpdateKeyContext) => boolean;
   telegramDeps?: TelegramNativeCommandDeps;
   opts: { token: string };
@@ -259,7 +264,7 @@ async function resolveTelegramCommandAuth(params: {
   resolveTelegramGroupConfig: (
     chatId: string | number,
     messageThreadId?: number,
-  ) => { groupConfig?: TelegramGroupConfig; topicConfig?: TelegramTopicConfig };
+  ) => TelegramResolvedGroupConfig;
   requireAuth: boolean;
 }): Promise<TelegramCommandAuthResult | null> {
   const {
@@ -321,7 +326,8 @@ async function resolveTelegramCommandAuth(params: {
     !isGroup && groupConfig && "dmPolicy" in groupConfig
       ? (groupConfig.dmPolicy ?? telegramCfg.dmPolicy ?? "pairing")
       : (telegramCfg.dmPolicy ?? "pairing");
-  const requireTopic = groupConfig?.requireTopic;
+  const requireTopic =
+    !isGroup && groupConfig && "requireTopic" in groupConfig ? groupConfig.requireTopic : undefined;
   if (!isGroup && requireTopic === true && dmThreadId == null) {
     logVerbose(`Blocked telegram command in DM ${chatId}: requireTopic=true but no topic present`);
     return null;

@@ -322,6 +322,7 @@ describe("emitExecSystemEvent", () => {
       },
     });
     expect(requestHeartbeatNowMock).toHaveBeenCalledWith({
+      coalesceMs: 0,
       reason: "exec-event",
       sessionKey: "agent:ops:main",
     });
@@ -338,6 +339,7 @@ describe("emitExecSystemEvent", () => {
       contextKey: "exec:run-global",
     });
     expect(requestHeartbeatNowMock).toHaveBeenCalledWith({
+      coalesceMs: 0,
       reason: "exec-event",
     });
   });

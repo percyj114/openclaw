@@ -39,6 +39,7 @@ export type SurfaceConfigEntry = {
 };
 
 export type OpenClawConfig = {
+  $schema?: string;
   meta?: {
     /** Last OpenClaw version that wrote this config. */
     lastTouchedVersion?: string;

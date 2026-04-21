@@ -1067,7 +1067,7 @@ export const dispatchTelegramMessage = async ({
     sentFallback = result.delivered;
   }
 
-  if (!queuedFinal && !sentFallback && !dispatchError) {
+  if (!queuedFinal && !sentFallback && !dispatchError && !deliverySummary.delivered) {
     const policySessionKey =
       ctxPayload.CommandSource === "native"
         ? (ctxPayload.CommandTargetSessionKey ?? ctxPayload.SessionKey)
@@ -1088,15 +1088,15 @@ export const dispatchTelegramMessage = async ({
       });
       sentFallback = result.delivered;
     }
-    silentReplyDispatchLogger.info("telegram turn ended without visible final response", {
-      sessionKey: policySessionKey,
-      chatId: String(chatId),
+    silentReplyDispatchLogger.debug("telegram turn ended without visible final response", {
+      hasSessionKey: Boolean(policySessionKey),
+      hasChatId: chatId != null,
       queuedFinal,
       sentFallback,
     });
   }
 
-  const hasFinalResponse = queuedFinal || sentFallback;
+  const hasFinalResponse = queuedFinal || sentFallback || deliverySummary.delivered;
 
   if (statusReactionController && !hasFinalResponse) {
     void Promise.resolve(statusReactionController.setError()).catch((err: unknown) => {
