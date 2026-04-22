@@ -766,16 +766,13 @@ export async function runPreparedReply(
     },
   };
 
-  const effectiveSessionCtx =
+  const replyThreadingOverride =
     isBareSessionReset && sessionCtx.ReplyThreading?.implicitCurrentMessage !== "deny"
       ? {
-          ...sessionCtx,
-          ReplyThreading: {
-            ...sessionCtx.ReplyThreading,
-            implicitCurrentMessage: "deny" as const,
-          },
+          ...sessionCtx.ReplyThreading,
+          implicitCurrentMessage: "deny" as const,
         }
-      : sessionCtx;
+      : undefined;
 
   return runReplyAgent({
     commandBody: prefixedCommandBody,
@@ -806,9 +803,10 @@ export async function runPreparedReply(
     blockStreamingEnabled,
     blockReplyChunking,
     resolvedBlockStreamingBreak,
-    sessionCtx: effectiveSessionCtx,
+    sessionCtx,
     shouldInjectGroupIntro,
     typingMode,
     resetTriggered: effectiveResetTriggered,
+    replyThreadingOverride,
   });
 }
