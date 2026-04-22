@@ -152,6 +152,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
 
     for (const staleCleanup of await channelDoctor.collectChannelDoctorStaleConfigMutations(
       candidate,
+      { env: process.env },
     )) {
       if (staleCleanup.changes.length === 0) {
         continue;
@@ -181,6 +182,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
     const repairSequence = await runDoctorRepairSequence({
       state: { cfg, candidate, pendingChanges, fixHints },
       doctorFixCommand,
+      env: process.env,
     });
     ({ cfg, candidate, pendingChanges, fixHints } = repairSequence.state);
     emitDoctorNotes({
@@ -195,6 +197,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
       warningNotes: await collectDoctorPreviewWarnings({
         cfg: candidate,
         doctorFixCommand,
+        env: process.env,
       }),
     });
   }
@@ -202,6 +205,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
   const mutableAllowlistWarnings = collectMutableAllowlistWarnings
     ? await collectMutableAllowlistWarnings({
         cfg: candidate,
+        env: process.env,
       })
     : [];
   if (mutableAllowlistWarnings.length > 0) {
