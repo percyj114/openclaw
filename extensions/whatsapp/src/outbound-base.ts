@@ -17,7 +17,7 @@ import { toWhatsappJid } from "./text-runtime.js";
 type WhatsAppChunker = NonNullable<ChannelOutboundAdapter["chunker"]>;
 type WhatsAppSendTextOptions = {
   verbose: boolean;
-  cfg?: OpenClawConfig;
+  cfg: OpenClawConfig;
   mediaUrl?: string;
   mediaAccess?: {
     localRoots?: readonly string[];
@@ -43,7 +43,7 @@ type WhatsAppSendMessage = (
 type WhatsAppSendPoll = (
   to: string,
   poll: Parameters<NonNullable<ChannelOutboundAdapter["sendPoll"]>>[0]["poll"],
-  options: { verbose: boolean; accountId?: string; cfg?: OpenClawConfig },
+  options: { verbose: boolean; accountId?: string; cfg: OpenClawConfig },
 ) => Promise<{ messageId: string; toJid: string }>;
 
 type CreateWhatsAppOutboundBaseParams = {
