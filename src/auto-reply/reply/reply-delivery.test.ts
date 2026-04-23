@@ -111,6 +111,38 @@ describe("createBlockReplyDeliveryHandler", () => {
     });
   });
 
+  it("suppresses implicit current-message threading for block replies when reply threading denies it", async () => {
+    const blockReplyPipeline = {
+      enqueue: vi.fn(),
+    } as unknown as BlockReplyPipelineLike;
+
+    const handler = createBlockReplyDeliveryHandler({
+      onBlockReply: vi.fn(async () => {}),
+      currentMessageId: "msg-123",
+      replyThreading: { implicitCurrentMessage: "deny" },
+      normalizeStreamingText: (payload) => ({ text: payload.text, skip: false }),
+      applyReplyToMode: (payload) => payload,
+      typingSignals: {
+        signalTextDelta: vi.fn(async () => {}),
+      } as unknown as TypingSignaler,
+      blockStreamingEnabled: true,
+      blockReplyPipeline,
+      directlySentBlockKeys: new Set(),
+    });
+
+    await handler({ text: "reset intro" });
+
+    expect(blockReplyPipeline.enqueue).toHaveBeenCalledWith({
+      text: "reset intro",
+      mediaUrl: undefined,
+      replyToId: undefined,
+      replyToCurrent: undefined,
+      replyToTag: undefined,
+      audioAsVoice: false,
+      mediaUrls: undefined,
+    });
+  });
+
   it("parses media directives in block replies before path normalization", () => {
     const normalized = normalizeReplyPayloadDirectives({
       payload: { text: "Result\nMEDIA: ./image.png" },

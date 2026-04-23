@@ -1199,6 +1199,7 @@ export async function runReplyAgent(params: {
       commandBody,
       followupRun,
       sessionCtx,
+      replyThreading: replyThreadingOverride ?? sessionCtx.ReplyThreading,
       replyOperation,
       opts,
       typingSignals,
