@@ -1,4 +1,5 @@
 import type { MiscMessageGenerationOptions } from "@whiskeysockets/baileys";
+import { jidToE164 } from "./text-runtime.js";
 
 export type QuotedMessageKey = {
   id: string;
@@ -60,15 +61,58 @@ export function lookupInboundMessageMeta(
   return { participant: entry.participant, body: entry.body };
 }
 
-export function lookupInboundMessageMetaById(
+function normalizeComparableJid(jid: string | undefined): string | undefined {
+  const normalized = jid?.trim().replace(/:\d+/, "").toLowerCase();
+  return normalized || undefined;
+}
+
+function isGroupJid(jid: string | undefined): boolean {
+  return Boolean(jid && jid.endsWith("@g.us"));
+}
+
+function areComparableJidsEqual(left: string | undefined, right: string | undefined): boolean {
+  const normalizedLeft = normalizeComparableJid(left);
+  const normalizedRight = normalizeComparableJid(right);
+  if (!normalizedLeft || !normalizedRight) {
+    return false;
+  }
+  if (normalizedLeft === normalizedRight) {
+    return true;
+  }
+  const leftE164 = jidToE164(normalizedLeft);
+  const rightE164 = jidToE164(normalizedRight);
+  return Boolean(leftE164 && rightE164 && leftE164 === rightE164);
+}
+
+function matchesQuotedConversationTarget(targetJid: string, candidate: QuotedMetaLookup): boolean {
+  if (areComparableJidsEqual(targetJid, candidate.remoteJid)) {
+    return true;
+  }
+  if (isGroupJid(targetJid) || isGroupJid(candidate.remoteJid)) {
+    return false;
+  }
+  return areComparableJidsEqual(targetJid, candidate.participant);
+}
+
+export function lookupInboundMessageMetaForTarget(
   accountId: string,
+  targetJid: string,
   messageId: string,
 ): QuotedMetaLookup | undefined {
-  if (!accountId || !messageId) {
+  if (!accountId || !messageId || !targetJid) {
     return undefined;
+  }
+  const exact = lookupInboundMessageMeta(accountId, targetJid, messageId);
+  if (exact) {
+    return {
+      remoteJid: targetJid,
+      participant: exact.participant,
+      body: exact.body,
+    };
   }
   const prefix = `${accountId}:`;
   const suffix = `:${messageId}`;
+  let matched: QuotedMetaLookup | undefined;
   for (const [cacheKey, entry] of cache.entries()) {
     if (!cacheKey.startsWith(prefix) || !cacheKey.endsWith(suffix)) {
       continue;
@@ -78,13 +122,20 @@ export function lookupInboundMessageMetaById(
       continue;
     }
     const remoteJid = cacheKey.slice(prefix.length, cacheKey.length - suffix.length);
-    return {
+    const candidate = {
       remoteJid,
       participant: entry.participant,
       body: entry.body,
     };
+    if (!matchesQuotedConversationTarget(targetJid, candidate)) {
+      continue;
+    }
+    if (matched) {
+      return undefined;
+    }
+    matched = candidate;
   }
-  return undefined;
+  return matched;
 }
 
 export function buildQuotedMessageOptions(params: {

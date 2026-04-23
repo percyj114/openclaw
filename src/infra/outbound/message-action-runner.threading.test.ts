@@ -174,6 +174,7 @@ describe("message action threading helpers", () => {
     };
 
     const resolved = resolveAndApplyOutboundReplyToId(actionParams, {
+      channel: "workspace",
       toolContext: {
         currentChannelId: "channel:C123",
         currentMessageId: "msg-42",
@@ -193,6 +194,7 @@ describe("message action threading helpers", () => {
     };
 
     const resolved = resolveAndApplyOutboundReplyToId(actionParams, {
+      channel: "workspace",
       toolContext: {
         currentChannelId: "channel:C123",
         currentMessageId: "msg-42",
@@ -213,6 +215,7 @@ describe("message action threading helpers", () => {
     const hasRepliedRef = { value: false };
 
     const firstResolved = resolveAndApplyOutboundReplyToId(actionParams, {
+      channel: "workspace",
       toolContext: {
         currentChannelId: "channel:C123",
         currentMessageId: "msg-42",
@@ -228,6 +231,7 @@ describe("message action threading helpers", () => {
         message: "followup",
       },
       {
+        channel: "workspace",
         toolContext: {
           currentChannelId: "channel:C123",
           currentMessageId: "msg-42",
@@ -240,5 +244,68 @@ describe("message action threading helpers", () => {
     expect(firstResolved).toBe("msg-42");
     expect(secondResolved).toBeUndefined();
     expect(hasRepliedRef.value).toBe(true);
+  });
+
+  it("consumes first-mode when the first send uses an explicit replyTo", () => {
+    const hasRepliedRef = { value: false };
+    const explicitResolved = resolveAndApplyOutboundReplyToId(
+      {
+        channel: "workspace",
+        target: "channel:C123",
+        message: "first",
+        replyTo: "explicit-1",
+      },
+      {
+        channel: "workspace",
+        toolContext: {
+          currentChannelId: "channel:C123",
+          currentMessageId: "msg-42",
+          replyToMode: "first",
+          hasRepliedRef,
+        },
+      },
+    );
+
+    const inheritedResolved = resolveAndApplyOutboundReplyToId(
+      {
+        channel: "workspace",
+        target: "channel:C123",
+        message: "followup",
+      },
+      {
+        channel: "workspace",
+        toolContext: {
+          currentChannelId: "channel:C123",
+          currentMessageId: "msg-42",
+          replyToMode: "first",
+          hasRepliedRef,
+        },
+      },
+    );
+
+    expect(explicitResolved).toBe("explicit-1");
+    expect(inheritedResolved).toBeUndefined();
+    expect(hasRepliedRef.value).toBe(true);
+  });
+
+  it("does not inherit reply threading across providers even when target ids match", () => {
+    const actionParams: Record<string, unknown> = {
+      channel: "discord",
+      target: "channel:C123",
+      message: "hi",
+    };
+
+    const resolved = resolveAndApplyOutboundReplyToId(actionParams, {
+      channel: "discord",
+      toolContext: {
+        currentChannelId: "channel:C123",
+        currentChannelProvider: "slack",
+        currentMessageId: "msg-42",
+        replyToMode: "all",
+      },
+    });
+
+    expect(resolved).toBeUndefined();
+    expect(actionParams.replyTo).toBeUndefined();
   });
 });

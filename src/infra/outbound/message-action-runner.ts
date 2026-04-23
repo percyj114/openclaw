@@ -569,6 +569,7 @@ async function handleSendAction(ctx: ResolvedActionContext): Promise<MessageActi
   const silent = readBooleanParam(params, "silent");
 
   const replyToId = resolveAndApplyOutboundReplyToId(params, {
+    channel,
     toolContext: input.toolContext,
   });
   const { resolvedThreadId, outboundRoute } = await prepareOutboundMirrorRoute({

@@ -41,10 +41,15 @@ export function resolveAndApplyOutboundThreadId(
 
 function isSameConversationTarget(
   actionParams: Record<string, unknown>,
+  channel: ChannelId,
   toolContext?: ChannelThreadingToolContext,
 ): boolean {
   const currentChannelId = toolContext?.currentChannelId?.trim();
   if (!currentChannelId) {
+    return false;
+  }
+  const currentChannelProvider = toolContext?.currentChannelProvider?.trim();
+  if (currentChannelProvider && currentChannelProvider !== channel) {
     return false;
   }
   const explicitTarget =
@@ -60,15 +65,21 @@ function isSameConversationTarget(
 export function resolveAndApplyOutboundReplyToId(
   actionParams: Record<string, unknown>,
   context: {
+    channel: ChannelId;
     toolContext?: ChannelThreadingToolContext;
   },
 ): string | undefined {
   const explicitReplyToId = readStringParam(actionParams, "replyTo");
   if (explicitReplyToId) {
+    if (context.toolContext?.replyToMode === "first") {
+      const hasRepliedRef = context.toolContext.hasRepliedRef;
+      if (hasRepliedRef) {
+        hasRepliedRef.value = true;
+      }
+    }
     return explicitReplyToId;
   }
-
-  if (!isSameConversationTarget(actionParams, context.toolContext)) {
+  if (!isSameConversationTarget(actionParams, context.channel, context.toolContext)) {
     return undefined;
   }
 

@@ -216,6 +216,7 @@ export async function attachWebInboxToSocket(
           body: combinedBody,
           mentions: mentioned.size > 0 ? Array.from(mentioned) : undefined,
           mentionedJids: mentioned.size > 0 ? Array.from(mentioned) : undefined,
+          isBatched: true,
         };
         await options.onMessage(combinedMessage);
         await finalizeInboundDedupe(entries);

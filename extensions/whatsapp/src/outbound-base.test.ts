@@ -252,6 +252,49 @@ describe("createWhatsAppOutboundBase", () => {
     );
   });
 
+  it("does not reuse quote metadata from a different conversation", async () => {
+    cacheInboundMessageMeta("default", "120363400000000000@g.us", "reply-group", {
+      participant: "5511976136970@s.whatsapp.net",
+      body: "group-only body",
+    });
+    const sendMessageWhatsApp = vi.fn(async () => ({
+      messageId: "msg-group-miss",
+      toJid: "5511976136970@s.whatsapp.net",
+    }));
+    const outbound = createWhatsAppOutboundBase({
+      chunker: (text) => [text],
+      sendMessageWhatsApp,
+      sendPollWhatsApp: vi.fn(),
+      shouldLogVerbose: () => false,
+      resolveTarget: ({ to }) => ({ ok: true as const, to: to ?? "" }),
+    });
+
+    await outbound.sendText!({
+      cfg: {
+        channels: {
+          whatsapp: {
+            accounts: {
+              default: {},
+            },
+          },
+        },
+      } as never,
+      to: "whatsapp:+5511976136970",
+      text: "reply",
+      accountId: "default",
+      deps: { sendWhatsApp: sendMessageWhatsApp },
+      replyToId: "reply-group",
+    });
+
+    expect(sendMessageWhatsApp).toHaveBeenCalledWith(
+      "whatsapp:+5511976136970",
+      "reply",
+      expect.not.objectContaining({
+        quotedMessageKey: expect.anything(),
+      }),
+    );
+  });
+
   it("threads cfg into sendPollWhatsApp call", async () => {
     const sendPollWhatsApp = vi.fn(async () => ({
       messageId: "wa-poll-1",

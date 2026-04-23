@@ -487,6 +487,7 @@ export const sendHandlers: GatewayRequestHandlers = {
           target: deliveryTarget,
           currentSessionKey: providedSessionKey,
           resolvedTarget: idLikeTarget,
+          replyToId,
           threadId,
         });
         const providedSessionBaseKey =

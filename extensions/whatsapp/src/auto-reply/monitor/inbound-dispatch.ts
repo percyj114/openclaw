@@ -40,6 +40,10 @@ type VisibleReplyTarget = {
   } | null;
 };
 
+type ReplyThreadingContext = {
+  implicitCurrentMessage?: "default" | "allow" | "deny";
+};
+
 type SenderContext = {
   id?: string;
   name?: string;
@@ -91,6 +95,7 @@ export function buildWhatsAppInboundContext(params: {
   msg: WebInboundMsg;
   route: ReturnType<typeof resolveAgentRoute>;
   sender: SenderContext;
+  replyThreading?: ReplyThreadingContext;
   visibleReplyTo?: VisibleReplyTarget;
 }) {
   const inboundHistory =
@@ -132,6 +137,7 @@ export function buildWhatsAppInboundContext(params: {
     SenderId: params.sender.id ?? params.sender.e164,
     SenderE164: params.sender.e164,
     CommandAuthorized: params.commandAuthorized,
+    ReplyThreading: params.replyThreading,
     WasMentioned: params.msg.wasMentioned,
     GroupSystemPrompt: params.groupSystemPrompt,
     ...(params.msg.location ? toLocationContext(params.msg.location) : {}),
