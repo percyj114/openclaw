@@ -252,7 +252,7 @@ describe("createWhatsAppOutboundBase", () => {
     );
   });
 
-  it("does not reuse quote metadata from a different conversation", async () => {
+  it("falls back to the target JID when quote metadata only exists in a different conversation", async () => {
     cacheInboundMessageMeta("default", "120363400000000000@g.us", "reply-group", {
       participant: "5511976136970@s.whatsapp.net",
       body: "group-only body",
@@ -289,8 +289,14 @@ describe("createWhatsAppOutboundBase", () => {
     expect(sendMessageWhatsApp).toHaveBeenCalledWith(
       "whatsapp:+5511976136970",
       "reply",
-      expect.not.objectContaining({
-        quotedMessageKey: expect.anything(),
+      expect.objectContaining({
+        quotedMessageKey: {
+          id: "reply-group",
+          remoteJid: "5511976136970@s.whatsapp.net",
+          fromMe: false,
+          participant: undefined,
+          messageText: undefined,
+        },
       }),
     );
   });
