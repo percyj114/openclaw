@@ -157,6 +157,7 @@ Docs: https://docs.openclaw.ai
 - Plugins/Google Meet: report required manual actions for Chrome joins, use browser automation for Meet entry, and persist the private-WS node opt-in so paired-node realtime sessions keep their intended network policy. Thanks @steipete.
 - Slack: route native stream fallback replies through the normal chunked sender so long buffered Slack Connect responses are not dropped or duplicated. (#71124) Thanks @martingarramon.
 - WhatsApp: transcribe accepted voice notes before agent dispatch while keeping spoken transcripts out of command authorization. (#64120) Thanks @rogerdigital.
+- Matrix: separate recovery-key, backup, and owner-trust diagnostics during E2EE recovery, add recovery-key rotation for backup reset, and cover destructive backup restore paths in QA (#71311) thanks @gumadeiras.
 
 ## 2026.4.23
 
