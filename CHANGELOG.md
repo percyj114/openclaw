@@ -65,6 +65,7 @@ Docs: https://docs.openclaw.ai
 
 - Discord/subagents: preserve thread-bound completion delivery by keeping the requester-agent announce path primary and falling back to direct thread sends only when the announce produces no visible output. (#71064) Thanks @DolencLuka.
 - Browser/tool: give Chrome MCP existing-session manage calls a longer default timeout, pass explicit tool timeouts through tab management, and recover stale selected-page MCP sessions instead of forcing a manual reset. Thanks @steipete.
+- Cron/isolated sessions: clear stale runtime, lifecycle, auth, model, exec, heartbeat, usage, and delivery artifacts when creating a fresh isolated run, and persist per-run session rows as snapshots so old base-session state no longer leaks into new cron executions. Thanks @vincentkoc.
 - Gateway/sessions: recover main-agent turns interrupted by a gateway restart from stale transcript-lock evidence, avoiding stuck `status: "running"` sessions without broad post-boot transcript scans. Fixes #70555. Thanks @bitloi.
 - Codex approvals: keep command approval responses within Codex app-server `availableDecisions`, including deny/cancel fallbacks for prompts that do not offer `decline`. (#71338) Thanks @Lucenx9.
 - Plugins/Google Meet: include live Chrome-node readiness in `googlemeet setup` and document the Parallels recovery checks, so stale node tokens or disconnected VM browsers are visible before an agent opens a meeting. Thanks @steipete.
