@@ -5,7 +5,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { getSafeLocalStorage } from "../../local-storage.ts";
 import type { MessageGroup } from "../types/chat-types.ts";
 import {
+  formatChatTimestampForDisplay,
   renderMessageGroup,
+  renderStreamingGroup,
   resolveAssistantTextAvatar,
   resetAssistantAttachmentAvailabilityCacheForTest,
 } from "./grouped-render.ts";
@@ -327,6 +329,10 @@ describe("grouped chat rendering", () => {
       { contextWindow: 1_000_000 },
     );
 
+    const meta = container.querySelector<HTMLDetailsElement>("details.msg-meta");
+    expect(meta).not.toBeNull();
+    expect(meta?.open).toBe(false);
+    expect(meta?.querySelector("summary")?.textContent).toContain("Context");
     expect(container.querySelector(".msg-meta__ctx")?.textContent).toBe("44% ctx");
     expect(container.textContent).toContain("R438.4k");
     expect(container.textContent).toContain("W307");
@@ -352,6 +358,34 @@ describe("grouped chat rendering", () => {
     );
 
     expect(container.querySelector(".msg-meta__ctx")?.textContent).toBe("10% ctx");
+  });
+
+  it("renders full dates with message timestamps", () => {
+    const container = document.createElement("div");
+    const timestamp = Date.UTC(2026, 3, 24, 18, 30);
+
+    renderAssistantMessage(container, {
+      role: "assistant",
+      content: "Done",
+      timestamp,
+    });
+
+    const time = container.querySelector<HTMLTimeElement>(".chat-group-timestamp");
+    const display = formatChatTimestampForDisplay(timestamp);
+    expect(time).not.toBeNull();
+    expect(time?.dateTime).toBe(display.dateTime);
+    expect(time?.textContent?.trim()).toBe(display.label);
+    expect(time?.getAttribute("title")).toBe(display.title);
+  });
+
+  it("renders full dates with streaming timestamps", () => {
+    const container = document.createElement("div");
+    const timestamp = Date.UTC(2026, 3, 24, 18, 30);
+
+    render(renderStreamingGroup("Working", timestamp), container);
+
+    const time = container.querySelector<HTMLTimeElement>(".chat-group-timestamp");
+    expect(time?.textContent?.trim()).toBe(formatChatTimestampForDisplay(timestamp).label);
   });
 
   it("renders the configured local user name in user message footers", () => {
