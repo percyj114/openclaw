@@ -495,12 +495,17 @@ require Computer Use:
 
 With no marketplace fields, OpenClaw asks Codex app-server to use its discovered
 marketplaces. On a fresh Codex home, app-server seeds the official curated
-marketplace and OpenClaw waits briefly for that catalog before installing. Use
-`marketplaceSource` for a non-default Codex marketplace source that app-server
-can add, or `marketplacePath` for a local marketplace file that already exists
-on the machine. If the marketplace is already registered with Codex app-server,
-use `marketplaceName` instead. The defaults are `pluginName: "computer-use"` and
-`mcpServerName: "computer-use"`.
+marketplace and OpenClaw follows the same loading shape as Codex: it polls
+`plugin/list` briefly before treating Computer Use as unavailable. If multiple
+known Codex marketplaces contain Computer Use, OpenClaw uses the Codex
+marketplace preference order before failing closed for unknown ambiguous
+matches.
+
+Use `marketplaceSource` for a non-default Codex marketplace source that
+app-server can add, or `marketplacePath` for a local marketplace file that
+already exists on the machine. If the marketplace is already registered with
+Codex app-server, use `marketplaceName` instead. The defaults are
+`pluginName: "computer-use"` and `mcpServerName: "computer-use"`.
 
 The same setup can be checked or installed from the command surface:
 

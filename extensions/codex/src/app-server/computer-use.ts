@@ -60,7 +60,9 @@ type MarketplaceResolution = {
   message?: string;
 };
 
-const MARKETPLACE_DISCOVERY_RETRY_DELAYS_MS = [250, 500, 1000, 2000, 3000];
+const CURATED_MARKETPLACE_POLL_INTERVAL_MS = 2_000;
+const CURATED_MARKETPLACE_POLL_TIMEOUT_MS = 15_000;
+const COMPUTER_USE_MARKETPLACE_NAME_PRIORITY = ["openai-bundled", "openai-curated", "local"];
 
 export async function readCodexComputerUseStatus(
   params: CodexComputerUseSetupParams = {},
@@ -237,10 +239,8 @@ async function resolveMarketplaceRef(params: {
   }
 
   let candidates: MarketplaceRef[] = [];
-  for (const delayMs of [0, ...marketplaceDiscoveryRetryDelays(params)]) {
-    if (delayMs > 0) {
-      await delay(delayMs, params.signal);
-    }
+  const waitUntil = marketplaceDiscoveryWaitUntil(params);
+  while (candidates.length === 0) {
     const listed = await params.request<v2.PluginListResponse>("plugin/list", {
       cwds: [],
     } satisfies v2.PluginListParams);
@@ -248,6 +248,13 @@ async function resolveMarketplaceRef(params: {
     if (candidates.length > 0) {
       break;
     }
+    if (Date.now() >= waitUntil) {
+      break;
+    }
+    await delay(
+      Math.min(CURATED_MARKETPLACE_POLL_INTERVAL_MS, waitUntil - Date.now()),
+      params.signal,
+    );
   }
 
   if (preferredMarketplaceName) {
@@ -263,6 +270,10 @@ async function resolveMarketplaceRef(params: {
     };
   }
   if (candidates.length > 1) {
+    const preferred = chooseKnownComputerUseMarketplace(candidates);
+    if (preferred) {
+      return { marketplace: preferred };
+    }
     return {
       message: `Multiple Codex marketplaces contain ${params.config.pluginName}. Configure computerUse.marketplaceName or computerUse.marketplacePath to choose one.`,
     };
@@ -298,19 +309,31 @@ function findComputerUseMarketplaces(
     });
 }
 
-function marketplaceDiscoveryRetryDelays(params: {
+function chooseKnownComputerUseMarketplace(
+  candidates: MarketplaceRef[],
+): MarketplaceRef | undefined {
+  for (const marketplaceName of COMPUTER_USE_MARKETPLACE_NAME_PRIORITY) {
+    const candidate = candidates.find((marketplace) => marketplace.name === marketplaceName);
+    if (candidate) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
+function marketplaceDiscoveryWaitUntil(params: {
   config: ResolvedCodexComputerUseConfig;
   allowAdd: boolean;
-}): number[] {
+}): number {
   if (
     params.allowAdd &&
     !params.config.marketplaceSource &&
     !params.config.marketplacePath &&
     !params.config.marketplaceName
   ) {
-    return MARKETPLACE_DISCOVERY_RETRY_DELAYS_MS;
+    return Date.now() + CURATED_MARKETPLACE_POLL_TIMEOUT_MS;
   }
-  return [];
+  return 0;
 }
 
 async function delay(ms: number, signal?: AbortSignal): Promise<void> {

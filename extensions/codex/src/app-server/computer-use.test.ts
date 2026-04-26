@@ -212,7 +212,7 @@ describe("Codex Computer Use setup", () => {
       request,
     });
 
-    await vi.advanceTimersByTimeAsync(750);
+    await vi.advanceTimersByTimeAsync(4_000);
 
     await expect(installed).resolves.toEqual(
       expect.objectContaining({
@@ -227,6 +227,26 @@ describe("Codex Computer Use setup", () => {
     expect(
       vi.mocked(request).mock.calls.filter(([method]) => method === "plugin/list"),
     ).toHaveLength(3);
+  });
+
+  it("prefers the official Computer Use marketplace when multiple matches are present", async () => {
+    const request = createMultiMarketplaceComputerUseRequest();
+
+    await expect(
+      installCodexComputerUse({
+        pluginConfig: { computerUse: {} },
+        request,
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        ready: true,
+        marketplaceName: "openai-curated",
+      }),
+    );
+    expect(request).toHaveBeenCalledWith("plugin/install", {
+      marketplacePath: "/marketplaces/openai-curated/.agents/plugins/marketplace.json",
+      pluginName: "computer-use",
+    });
   });
 });
 
@@ -340,6 +360,80 @@ function createAmbiguousComputerUseRequest(): CodexComputerUseRequest {
     }
     throw new Error(`unexpected request ${method}`);
   }) as CodexComputerUseRequest;
+}
+
+function createMultiMarketplaceComputerUseRequest(): CodexComputerUseRequest {
+  let installed = false;
+  return vi.fn(async (method: string, requestParams?: unknown) => {
+    if (method === "experimentalFeature/enablement/set") {
+      return { enablement: { plugins: true } };
+    }
+    if (method === "plugin/list") {
+      return {
+        marketplaces: [
+          marketplaceEntry("workspace-tools", false),
+          marketplaceEntry("openai-curated", installed),
+        ],
+        marketplaceLoadErrors: [],
+        featuredPluginIds: [],
+      };
+    }
+    if (method === "plugin/read") {
+      return {
+        plugin: {
+          marketplaceName: "openai-curated",
+          marketplacePath: "/marketplaces/openai-curated/.agents/plugins/marketplace.json",
+          summary: pluginSummary(installed, "openai-curated"),
+          description: "Control desktop apps.",
+          skills: [],
+          apps: [],
+          mcpServers: ["computer-use"],
+        },
+      };
+    }
+    if (method === "plugin/install") {
+      expect(requestParams).toEqual({
+        marketplacePath: "/marketplaces/openai-curated/.agents/plugins/marketplace.json",
+        pluginName: "computer-use",
+      });
+      installed = true;
+      return { authPolicy: "ON_INSTALL", appsNeedingAuth: [] };
+    }
+    if (method === "config/mcpServer/reload") {
+      return undefined;
+    }
+    if (method === "mcpServerStatus/list") {
+      return {
+        data: installed
+          ? [
+              {
+                name: "computer-use",
+                tools: {
+                  list_apps: {
+                    name: "list_apps",
+                    inputSchema: { type: "object" },
+                  },
+                },
+                resources: [],
+                resourceTemplates: [],
+                authStatus: "unsupported",
+              },
+            ]
+          : [],
+        nextCursor: null,
+      };
+    }
+    throw new Error(`unexpected request ${method}`);
+  }) as CodexComputerUseRequest;
+}
+
+function marketplaceEntry(marketplaceName: string, installed: boolean) {
+  return {
+    name: marketplaceName,
+    path: `/marketplaces/${marketplaceName}/.agents/plugins/marketplace.json`,
+    interface: null,
+    plugins: [pluginSummary(installed, marketplaceName)],
+  };
 }
 
 function pluginSummary(installed: boolean, marketplaceName = "desktop-tools") {
