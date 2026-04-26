@@ -60,6 +60,8 @@ type MarketplaceResolution = {
   message?: string;
 };
 
+const MARKETPLACE_DISCOVERY_RETRY_DELAYS_MS = [250, 500, 1000, 2000, 3000];
+
 export async function readCodexComputerUseStatus(
   params: CodexComputerUseSetupParams = {},
 ): Promise<CodexComputerUseStatus> {
@@ -152,6 +154,7 @@ async function inspectCodexComputerUse(params: {
     request,
     config: params.config,
     allowAdd: params.installPlugin,
+    signal: params.signal,
   });
   if (!marketplace.marketplace) {
     return unavailableStatus(
@@ -216,6 +219,7 @@ async function resolveMarketplaceRef(params: {
   request: CodexComputerUseRequest;
   config: ResolvedCodexComputerUseConfig;
   allowAdd: boolean;
+  signal?: AbortSignal;
 }): Promise<MarketplaceResolution> {
   let preferredMarketplaceName = params.config.marketplaceName;
   if (params.config.marketplaceSource && params.allowAdd) {
@@ -232,24 +236,19 @@ async function resolveMarketplaceRef(params: {
     return { marketplace };
   }
 
-  const listed = await params.request<v2.PluginListResponse>("plugin/list", {
-    cwds: [],
-  } satisfies v2.PluginListParams);
-  const candidates = listed.marketplaces
-    .filter((marketplace) =>
-      marketplace.plugins.some(
-        (plugin) =>
-          plugin.name === params.config.pluginName ||
-          plugin.id === params.config.pluginName ||
-          plugin.id === `${params.config.pluginName}@${marketplace.name}`,
-      ),
-    )
-    .map((marketplace) => {
-      if (marketplace.path) {
-        return { name: marketplace.name, path: marketplace.path };
-      }
-      return { name: marketplace.name, remoteMarketplaceName: marketplace.name };
-    });
+  let candidates: MarketplaceRef[] = [];
+  for (const delayMs of [0, ...marketplaceDiscoveryRetryDelays(params)]) {
+    if (delayMs > 0) {
+      await delay(delayMs, params.signal);
+    }
+    const listed = await params.request<v2.PluginListResponse>("plugin/list", {
+      cwds: [],
+    } satisfies v2.PluginListParams);
+    candidates = findComputerUseMarketplaces(listed, params.config.pluginName);
+    if (candidates.length > 0) {
+      break;
+    }
+  }
 
   if (preferredMarketplaceName) {
     const preferred = candidates.find((candidate) => candidate.name === preferredMarketplaceName);
@@ -276,6 +275,66 @@ async function resolveMarketplaceRef(params: {
   }
   const marketplace = candidates[0];
   return marketplace ? { marketplace } : {};
+}
+
+function findComputerUseMarketplaces(
+  listed: v2.PluginListResponse,
+  pluginName: string,
+): MarketplaceRef[] {
+  return listed.marketplaces
+    .filter((marketplace) =>
+      marketplace.plugins.some(
+        (plugin) =>
+          plugin.name === pluginName ||
+          plugin.id === pluginName ||
+          plugin.id === `${pluginName}@${marketplace.name}`,
+      ),
+    )
+    .map((marketplace) => {
+      if (marketplace.path) {
+        return { name: marketplace.name, path: marketplace.path };
+      }
+      return { name: marketplace.name, remoteMarketplaceName: marketplace.name };
+    });
+}
+
+function marketplaceDiscoveryRetryDelays(params: {
+  config: ResolvedCodexComputerUseConfig;
+  allowAdd: boolean;
+}): number[] {
+  if (
+    params.allowAdd &&
+    !params.config.marketplaceSource &&
+    !params.config.marketplacePath &&
+    !params.config.marketplaceName
+  ) {
+    return MARKETPLACE_DISCOVERY_RETRY_DELAYS_MS;
+  }
+  return [];
+}
+
+async function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) {
+    throw abortError(signal);
+  }
+  await new Promise<void>((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout>;
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+      reject(abortError(signal));
+    };
+    timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+function abortError(signal?: AbortSignal): Error {
+  const reason = signal?.reason;
+  return reason instanceof Error ? reason : new Error("Computer Use setup was aborted.");
 }
 
 async function readComputerUsePlugin(

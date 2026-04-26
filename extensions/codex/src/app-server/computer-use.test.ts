@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   CodexComputerUseSetupError,
   ensureCodexComputerUse,
@@ -8,6 +8,10 @@ import {
 } from "./computer-use.js";
 
 describe("Codex Computer Use setup", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("stays disabled until configured", async () => {
     await expect(
       readCodexComputerUseStatus({ pluginConfig: {}, request: vi.fn() }),
@@ -196,10 +200,42 @@ describe("Codex Computer Use setup", () => {
       pluginName: "computer-use",
     });
   });
+
+  it("waits for the default Codex marketplace during install", async () => {
+    vi.useFakeTimers();
+    const request = createComputerUseRequest({
+      installed: false,
+      marketplaceAvailableAfterListCalls: 3,
+    });
+    const installed = installCodexComputerUse({
+      pluginConfig: { computerUse: {} },
+      request,
+    });
+
+    await vi.advanceTimersByTimeAsync(750);
+
+    await expect(installed).resolves.toEqual(
+      expect.objectContaining({
+        ready: true,
+        message: "Computer Use is ready.",
+      }),
+    );
+    expect(request).toHaveBeenCalledWith("plugin/install", {
+      marketplacePath: "/marketplaces/desktop-tools/.agents/plugins/marketplace.json",
+      pluginName: "computer-use",
+    });
+    expect(
+      vi.mocked(request).mock.calls.filter(([method]) => method === "plugin/list"),
+    ).toHaveLength(3);
+  });
 });
 
-function createComputerUseRequest(params: { installed: boolean }): CodexComputerUseRequest {
+function createComputerUseRequest(params: {
+  installed: boolean;
+  marketplaceAvailableAfterListCalls?: number;
+}): CodexComputerUseRequest {
   let installed = params.installed;
+  let pluginListCalls = 0;
   return vi.fn(async (method: string, requestParams?: unknown) => {
     if (method === "experimentalFeature/enablement/set") {
       return { enablement: { plugins: true } };
@@ -212,15 +248,20 @@ function createComputerUseRequest(params: { installed: boolean }): CodexComputer
       };
     }
     if (method === "plugin/list") {
+      pluginListCalls += 1;
+      const marketplaceAvailable =
+        pluginListCalls >= (params.marketplaceAvailableAfterListCalls ?? 1);
       return {
-        marketplaces: [
-          {
-            name: "desktop-tools",
-            path: "/marketplaces/desktop-tools/.agents/plugins/marketplace.json",
-            interface: null,
-            plugins: [pluginSummary(installed)],
-          },
-        ],
+        marketplaces: marketplaceAvailable
+          ? [
+              {
+                name: "desktop-tools",
+                path: "/marketplaces/desktop-tools/.agents/plugins/marketplace.json",
+                interface: null,
+                plugins: [pluginSummary(installed)],
+              },
+            ]
+          : [],
         marketplaceLoadErrors: [],
         featuredPluginIds: [],
       };
