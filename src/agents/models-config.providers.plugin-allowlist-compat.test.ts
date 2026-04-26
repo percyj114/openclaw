@@ -5,6 +5,11 @@ import {
 } from "../plugins/bundled-compat.js";
 import { resolveEnabledProviderPluginIds } from "../plugins/providers.js";
 
+const TEST_PLUGIN_REGISTRY_ENV = {
+  OPENCLAW_DISABLE_PERSISTED_PLUGIN_REGISTRY: "1",
+  VITEST: "1",
+} as NodeJS.ProcessEnv;
+
 describe("implicit provider plugin allowlist compatibility", () => {
   it("keeps bundled implicit providers discoverable when plugins.allow is set", () => {
     const config = withBundledPluginEnablementCompat({
@@ -22,7 +27,7 @@ describe("implicit provider plugin allowlist compatibility", () => {
     expect(
       resolveEnabledProviderPluginIds({
         config,
-        env: { VITEST: "1" } as NodeJS.ProcessEnv,
+        env: TEST_PLUGIN_REGISTRY_ENV,
         onlyPluginIds: ["kilocode", "moonshot", "openrouter"],
       }),
     ).toEqual(["kilocode", "moonshot", "openrouter"]);
@@ -45,7 +50,7 @@ describe("implicit provider plugin allowlist compatibility", () => {
     expect(
       resolveEnabledProviderPluginIds({
         config,
-        env: { VITEST: "1" } as NodeJS.ProcessEnv,
+        env: TEST_PLUGIN_REGISTRY_ENV,
         onlyPluginIds: ["kilocode", "moonshot", "openrouter"],
       }),
     ).toEqual(["moonshot", "openrouter"]);

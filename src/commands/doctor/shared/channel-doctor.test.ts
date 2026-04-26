@@ -86,6 +86,7 @@ function expectMatrixDoctorLookupCalls(cfg?: unknown) {
   if (cfg) {
     expect(mocks.resolveReadOnlyChannelPluginsForConfig).toHaveBeenCalledWith(cfg, {
       includePersistedAuthState: false,
+      includeSetupRuntimeFallback: true,
     });
   }
   expect(mocks.getLoadedChannelPlugin).toHaveBeenCalledWith("matrix");
@@ -239,6 +240,7 @@ describe("channel doctor compatibility mutations", () => {
     expect(mocks.resolveReadOnlyChannelPluginsForConfig).toHaveBeenCalledWith(cfg, {
       env,
       includePersistedAuthState: false,
+      includeSetupRuntimeFallback: true,
     });
   });
 
@@ -297,6 +299,7 @@ describe("channel doctor compatibility mutations", () => {
     expect(result).toEqual(["channels.matrix extra"]);
     expect(mocks.resolveReadOnlyChannelPluginsForConfig).toHaveBeenCalledWith(cfg, {
       includePersistedAuthState: false,
+      includeSetupRuntimeFallback: true,
     });
     expect(collectEmptyAllowlistExtraWarnings.mock.calls[0]?.[0]).not.toHaveProperty("cfg");
   });
@@ -375,6 +378,7 @@ describe("channel doctor compatibility mutations", () => {
     expect(mocks.resolveReadOnlyChannelPluginsForConfig).toHaveBeenCalledWith(cfg, {
       env,
       includePersistedAuthState: false,
+      includeSetupRuntimeFallback: true,
     });
     expect(collectEmptyAllowlistExtraWarnings).toHaveBeenCalledTimes(3);
     expect(shouldSkipDefaultEmptyGroupAllowlistWarning).toHaveBeenCalledTimes(1);

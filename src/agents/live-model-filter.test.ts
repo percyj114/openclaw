@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { shouldExcludeProviderFromDefaultHighSignalLiveSweep } from "./live-model-filter.js";
 
+const TEST_PLUGIN_REGISTRY_ENV = {
+  OPENCLAW_DISABLE_PERSISTED_PLUGIN_REGISTRY: "1",
+  VITEST: "1",
+} as NodeJS.ProcessEnv;
+
 describe("shouldExcludeProviderFromDefaultHighSignalLiveSweep", () => {
   it("excludes dedicated harness providers from the default high-signal sweep", () => {
     expect(
@@ -39,6 +44,7 @@ describe("shouldExcludeProviderFromDefaultHighSignalLiveSweep", () => {
         provider: "openai-codex",
         useExplicitModels: false,
         providerFilter: new Set(["codex-cli"]),
+        env: TEST_PLUGIN_REGISTRY_ENV,
       }),
     ).toBe(false);
     expect(
@@ -46,6 +52,7 @@ describe("shouldExcludeProviderFromDefaultHighSignalLiveSweep", () => {
         provider: "openai-codex",
         useExplicitModels: false,
         providerFilter: new Set(["openai"]),
+        env: TEST_PLUGIN_REGISTRY_ENV,
       }),
     ).toBe(false);
   });
