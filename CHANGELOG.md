@@ -14,6 +14,7 @@ Docs: https://docs.openclaw.ai
 ### Fixes
 
 - Gateway/shutdown: report structured shutdown warnings and HTTP close timeout warnings through `ShutdownResult` while preserving lifecycle hook hardening. Carries forward #41296. Thanks @edenfunf.
+- Agents/exec: launch zsh, bash, and fish host exec shells with startup files suppressed while preserving existing PATH fallbacks, so daemon env is not overridden by shell startup files. Carries forward #40200; fixes #40179. Thanks @NewdlDewdl.
 - Plugins/QA: prebuild the private QA channel runtime before plugin gauntlet source runs so wrapper CPU/RSS measurements are not polluted by private QA dist rebuild work. Thanks @vincentkoc.
 - Gateway/reload: bound default restart deferral and SIGUSR1 restart drain to five minutes while preserving explicit `deferralTimeoutMs: 0` indefinite waits, so stale active work accounting cannot block config reloads forever. Thanks @vincentkoc.
 - Active Memory: register the prompt-build hook with the configured recall timeout plus setup grace instead of the 150s maximum budget, so default memory recall cannot delay turn startup for multiple minutes. Thanks @vincentkoc.
