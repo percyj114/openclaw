@@ -1,4 +1,3 @@
-import type { GroupMetadata } from "@whiskeysockets/baileys";
 import { resolveAccountEntry } from "openclaw/plugin-sdk/account-core";
 import { resolveInboundDebounceMs } from "openclaw/plugin-sdk/channel-inbound-debounce";
 import { formatCliCommand } from "openclaw/plugin-sdk/cli-runtime";
@@ -21,7 +20,7 @@ import {
   WhatsAppConnectionController,
   type ManagedWhatsAppListener,
 } from "../connection-controller.js";
-import { attachWebInboxToSocket } from "../inbound/monitor.js";
+import { attachWebInboxToSocket, type WhatsAppGroupMetadataCache } from "../inbound/monitor.js";
 import {
   newConnectionId,
   resolveHeartbeatSeconds,
@@ -201,7 +200,7 @@ export async function monitorWebChannel(
     }>
   >();
   const groupMemberNames = new Map<string, Map<string, string>>();
-  const groupMetadataCache = new Map<string, GroupMetadata>();
+  const groupMetadataCache: WhatsAppGroupMetadataCache = new Map();
   const echoTracker = createEchoTracker({ maxItems: 100, logVerbose });
 
   const sleep =
@@ -234,7 +233,6 @@ export async function monitorWebChannel(
     watchdogCheckMs,
     reconnectPolicy,
     socketTiming,
-    cachedGroupMetadata: async (jid) => groupMetadataCache.get(jid),
     abortSignal,
     sleep,
     isNonRetryableStatus: isNonRetryableWebCloseStatus,
