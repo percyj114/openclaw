@@ -30,7 +30,7 @@ Docs: https://docs.openclaw.ai
 
 ### Fixes
 
-- File-transfer plugin: require canonical read-path preflight authorization for `file.fetch` and fail closed when `dir.fetch` preflight entries are missing, absolute, or traversing before archive bytes are requested from the node. Carries forward #74134. Thanks @omarshahine.
+- File-transfer plugin: require canonical read-path preflight authorization for `file.fetch`, fail closed when `dir.fetch` preflight entries are missing, absolute, or traversing, and recheck returned archive entries before handing archive bytes to callers. Carries forward #74134. Thanks @omarshahine.
 - CLI/update: scope packaged Node compile caches by OpenClaw version and install metadata, so global installs no longer reuse stale compiled chunks after package updates. Thanks @pashpashpash.
 - Plugin SDK/testing: lazy-load TypeScript from the plugin test-contract runtime and add release checks for critical SDK contract entrypoint imports and bundle size, so published packages fail preflight before shipping ESM-incompatible or oversized contract helpers. Thanks @vincentkoc.
 - Channels/Microsoft Teams: treat configured `19:...@thread.tacv2` and legacy `19:...@thread.skype` team/channel IDs as already resolved during startup, avoiding false `channels unresolved` warnings while preserving Graph name lookup for display-name entries. Fixes #74683. Thanks @dseravalli.
